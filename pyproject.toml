@@ -1,0 +1,62 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "soma-shared"
+version = "0.1.0"
+description = "Shared contracts, database models, and utilities for SOMA projects"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "SOMA Team"}
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+
+dependencies = [
+    "pydantic>=2.0.0",
+    "sqlalchemy[asyncio]>=2.0.0",
+    "cryptography>=41.0.0",
+    "bittensor-wallet>=2.0.0",
+    "fastapi>=0.100.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "flake8>=6.0.0",
+    "mypy>=1.0.0",
+]
+
+[tool.black]
+line-length = 100
+target-version = ['py38', 'py39', 'py310', 'py311']
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+
+[tool.setuptools]
+packages = ["soma_shared", "soma_shared.contracts", "soma_shared.contracts.admin", "soma_shared.contracts.admin.v1", "soma_shared.contracts.api", "soma_shared.contracts.api.v1", "soma_shared.contracts.common", "soma_shared.contracts.miner", "soma_shared.contracts.miner.v1", "soma_shared.contracts.validator", "soma_shared.contracts.validator.v1", "soma_shared.db", "soma_shared.db.models", "soma_shared.utils"]
+
+[tool.setuptools.package-data]
+soma_shared = ["py.typed"]
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
