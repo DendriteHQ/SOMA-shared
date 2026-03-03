@@ -3,14 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 
 from pydantic import BaseModel, Field, field_validator
-
-
-def _require_tz(value: datetime, field_name: str) -> datetime:
-    if value.tzinfo is None or value.tzinfo.utcoffset(value) is None:
-        raise ValueError(
-            f"{field_name} must include timezone offset (e.g. 'Z' or '+00:00')"
-        )
-    return value
+from soma_shared.contracts.common.utils import require_tz
 
 
 class SetBurnRequest(BaseModel):
@@ -54,7 +47,7 @@ class CreateCompetitionRequest(BaseModel):
     )
     @classmethod
     def _validate_timezone(cls, value: datetime, info):
-        return _require_tz(value, info.field_name)
+        return require_tz(value, info.field_name)
 
 
 class CreateCompetitionResponse(BaseModel):
@@ -83,7 +76,7 @@ class UpdateCompetitionRequest(BaseModel):
     def _validate_timezone(cls, value: datetime | None, info):
         if value is None:
             return value
-        return _require_tz(value, info.field_name)
+        return require_tz(value, info.field_name)
 
 
 class UpdateCompetitionResponse(BaseModel):
@@ -168,7 +161,7 @@ class CreateTopMinerRequest(BaseModel):
     @field_validator("starts_at", "ends_at", mode="after")
     @classmethod
     def _validate_timezone(cls, value: datetime, info):
-        return _require_tz(value, info.field_name)
+        return require_tz(value, info.field_name)
 
 
 class CreateTopMinerResponse(BaseModel):
@@ -212,7 +205,7 @@ class UpdateTopMinerRequest(BaseModel):
     def _validate_timezone(cls, value: datetime | None, info):
         if value is None:
             return value
-        return _require_tz(value, info.field_name)
+        return require_tz(value, info.field_name)
 
 
 class UpdateTopMinerResponse(BaseModel):
