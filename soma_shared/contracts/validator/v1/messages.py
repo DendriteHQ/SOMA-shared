@@ -1,14 +1,20 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Generic, TypeVar, Literal, List
-from pydantic import BaseModel, Field
+from typing import TypeVar
+from pydantic import BaseModel, field_validator
+from soma_shared.contracts.common.utils import require_tz
 
 T = TypeVar("T")
 
 class HeartbeatRequest(BaseModel):
     ts: datetime
     version: str
+
+    @field_validator("ts", mode="after")
+    @classmethod
+    def _validate_timezone(cls, value: datetime, info):
+        return require_tz(value, info.field_name)
 
 class HeartbeatResponse(BaseModel):
     ok: bool
