@@ -2,7 +2,15 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+
+def _require_tz(value: datetime, field_name: str) -> datetime:
+    if value.tzinfo is None or value.tzinfo.utcoffset(value) is None:
+        raise ValueError(
+            f"{field_name} must include timezone offset (e.g. 'Z' or '+00:00')"
+        )
+    return value
 
 
 class SetBurnRequest(BaseModel):
@@ -37,6 +45,17 @@ class CreateCompetitionRequest(BaseModel):
     screener_is_active: bool = True
     screener_task_percentage: float = Field(default=0.0, ge=0.0, le=1.0)
 
+    @field_validator(
+        "upload_starts_at",
+        "upload_ends_at",
+        "eval_starts_at",
+        "eval_ends_at",
+        mode="after",
+    )
+    @classmethod
+    def _validate_timezone(cls, value: datetime, info):
+        return _require_tz(value, info.field_name)
+
 
 class CreateCompetitionResponse(BaseModel):
     ok: bool
@@ -52,6 +71,19 @@ class UpdateCompetitionRequest(BaseModel):
     upload_ends_at: datetime | None = None
     eval_starts_at: datetime | None = None
     eval_ends_at: datetime | None = None
+
+    @field_validator(
+        "upload_starts_at",
+        "upload_ends_at",
+        "eval_starts_at",
+        "eval_ends_at",
+        mode="after",
+    )
+    @classmethod
+    def _validate_timezone(cls, value: datetime | None, info):
+        if value is None:
+            return value
+        return _require_tz(value, info.field_name)
 
 
 class UpdateCompetitionResponse(BaseModel):
@@ -133,6 +165,11 @@ class CreateTopMinerRequest(BaseModel):
     starts_at: datetime
     ends_at: datetime
 
+    @field_validator("starts_at", "ends_at", mode="after")
+    @classmethod
+    def _validate_timezone(cls, value: datetime, info):
+        return _require_tz(value, info.field_name)
+
 
 class CreateTopMinerResponse(BaseModel):
     ok: bool
@@ -169,6 +206,13 @@ class UpdateTopMinerRequest(BaseModel):
     ss58: str | None = None
     starts_at: datetime | None = None
     ends_at: datetime | None = None
+
+    @field_validator("starts_at", "ends_at", mode="after")
+    @classmethod
+    def _validate_timezone(cls, value: datetime | None, info):
+        if value is None:
+            return value
+        return _require_tz(value, info.field_name)
 
 
 class UpdateTopMinerResponse(BaseModel):

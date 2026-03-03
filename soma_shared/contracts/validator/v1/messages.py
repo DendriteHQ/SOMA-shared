@@ -2,13 +2,26 @@ from __future__ import annotations
 
 from datetime import datetime
 from typing import Generic, TypeVar, Literal, List
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+
+def _require_tz(value: datetime, field_name: str) -> datetime:
+    if value.tzinfo is None or value.tzinfo.utcoffset(value) is None:
+        raise ValueError(
+            f"{field_name} must include timezone offset (e.g. 'Z' or '+00:00')"
+        )
+    return value
 
 T = TypeVar("T")
 
 class HeartbeatRequest(BaseModel):
     ts: datetime
     version: str
+
+    @field_validator("ts", mode="after")
+    @classmethod
+    def _validate_timezone(cls, value: datetime, info):
+        return _require_tz(value, info.field_name)
 
 class HeartbeatResponse(BaseModel):
     ok: bool
