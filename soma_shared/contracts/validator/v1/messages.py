@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Generic, TypeVar, Literal, List
-from pydantic import BaseModel, Field, field_validator
+from typing import TypeVar
+from pydantic import BaseModel, field_validator
 from soma_shared.contracts.common.utils import require_tz
 
 T = TypeVar("T")
