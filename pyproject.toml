@@ -41,6 +41,7 @@ dev = [
 migrations = [
     "alembic>=1.13.0",
     "psycopg2-binary>=2.9.0",
+    "sqlalchemy-views>=0.3.2",
 ]
 
 [tool.black]
@@ -54,7 +55,7 @@ python_classes = "Test*"
 python_functions = "test_*"
 
 [tool.setuptools]
-packages = ["soma_shared", "soma_shared.contracts", "soma_shared.contracts.admin", "soma_shared.contracts.admin.v1", "soma_shared.contracts.api", "soma_shared.contracts.api.v1", "soma_shared.contracts.common", "soma_shared.contracts.miner", "soma_shared.contracts.miner.v1", "soma_shared.contracts.validator", "soma_shared.contracts.validator.v1", "soma_shared.db", "soma_shared.db.models", "soma_shared.utils", "soma_shared.contracts.sandbox.v1", "soma_shared.contracts.sandbox"]
+packages = ["soma_shared", "soma_shared.contracts", "soma_shared.contracts.admin", "soma_shared.contracts.admin.v1", "soma_shared.contracts.api", "soma_shared.contracts.api.v1", "soma_shared.contracts.common", "soma_shared.contracts.miner", "soma_shared.contracts.miner.v1", "soma_shared.contracts.validator", "soma_shared.contracts.validator.v1", "soma_shared.db", "soma_shared.db.models", "soma_shared.db.views", "soma_shared.utils", "soma_shared.contracts.sandbox.v1", "soma_shared.contracts.sandbox"]
 
 [tool.setuptools.package-data]
 soma_shared = ["py.typed"]
