@@ -27,7 +27,7 @@ dependencies = [
     "sqlalchemy[asyncio]>=2.0.0",
     "cryptography>=41.0.0",
     "bittensor-wallet>=2.0.0",
-    "fastapi>=0.100.0",
+    "fastapi~=0.110.1",
 ]
 
 [project.optional-dependencies]
