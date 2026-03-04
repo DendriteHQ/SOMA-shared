@@ -42,6 +42,22 @@ from soma_shared.utils.verifier import verify_signature
 from soma_shared.utils.nonce_cache import NonceCache
 ```
 
+## Migrations
+
+Alembic migrations are maintained in this repository under `alembic/`.
+
+Run migrations:
+
+```bash
+cd /path/to/SOMA-shared
+alembic -c alembic.ini upgrade head
+```
+
+Environment:
+- `POSTGRES_DSN` (preferred), or
+- `RDS_SECRET_ID` + optional `RDS_WRITER_HOST` / `RDS_READER_HOST` / `RDS_PORT` / `RDS_DB_NAME` / `RDS_USE_READER`
+- Optional `ALEMBIC_DOTENV` to point to a `.env` file for Alembic.
+
 ## Structure
 
 ```

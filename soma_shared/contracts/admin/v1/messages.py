@@ -25,6 +25,17 @@ class GetBurnStatusResponse(BaseModel):
     burn_ratio: float
 
 
+class SetMinerBannedStatusRequest(BaseModel):
+    ss58: str
+    miner_banned_status: bool
+
+
+class SetMinerBannedStatusResponse(BaseModel):
+    ok: bool
+    ss58: str
+    miner_banned_status: bool
+
+
 class CreateCompetitionRequest(BaseModel):
     competition_name: str
     is_active: bool = False
