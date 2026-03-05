@@ -118,6 +118,19 @@ class CompetitionInfo(BaseModel):
     created_at: datetime
     updated_at: datetime
 
+    @field_validator(
+        "upload_starts_at",
+        "upload_ends_at",
+        "eval_starts_at",
+        "eval_ends_at",
+        "created_at",
+        "updated_at",
+        mode="after",
+    )
+    @classmethod
+    def _validate_timezone(cls, value: datetime, info):
+        return require_tz(value, info.field_name)
+
 
 class ListCompetitionsResponse(BaseModel):
     ok: bool
