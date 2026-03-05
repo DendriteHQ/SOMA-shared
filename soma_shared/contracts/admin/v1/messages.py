@@ -48,6 +48,7 @@ class CreateCompetitionRequest(BaseModel):
     screener_description: str | None = None
     screener_is_active: bool = True
     screener_task_percentage: float = Field(default=0.0, ge=0.0, le=1.0)
+    compression_ratios: list[float] | None = None
 
     @field_validator(
         "upload_starts_at",
@@ -75,6 +76,7 @@ class UpdateCompetitionRequest(BaseModel):
     upload_ends_at: datetime | None = None
     eval_starts_at: datetime | None = None
     eval_ends_at: datetime | None = None
+    compression_ratios: list[float] | None = None
 
     @field_validator(
         "upload_starts_at",
@@ -117,6 +119,7 @@ class CompetitionInfo(BaseModel):
     eval_ends_at: datetime
     created_at: datetime
     updated_at: datetime
+    compression_ratios: list[float] | None = None
 
     @field_validator(
         "upload_starts_at",
