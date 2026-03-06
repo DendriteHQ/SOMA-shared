@@ -6,6 +6,7 @@ from soma_shared.db.models.batch_challenge import BatchChallenge
 from soma_shared.db.models.batch_challenge_score import BatchChallengeScore
 from soma_shared.db.models.challenge_batch import ChallengeBatch
 from soma_shared.db.models.competition_challenge import CompetitionChallenge
+from soma_shared.db.models.miner import Miner
 from soma_shared.db.models.miner_upload import MinerUpload
 from soma_shared.db.models.script import Script
 
@@ -15,6 +16,7 @@ from .base import ViewDefinition, view_table, weighted_avg
 def v_miner_competition_rank() -> ViewDefinition:
     challenge_batches = ChallengeBatch.__table__
     scripts = Script.__table__
+    miners = Miner.__table__
     miner_uploads = MinerUpload.__table__
     batch_challenges = BatchChallenge.__table__
     scores = BatchChallengeScore.__table__
@@ -31,6 +33,7 @@ def v_miner_competition_rank() -> ViewDefinition:
         )
         .select_from(
             challenge_batches.join(scripts, scripts.c.id == challenge_batches.c.script_fk)
+            .join(miners, miners.c.id == scripts.c.miner_fk)
             .join(miner_uploads, miner_uploads.c.script_fk == scripts.c.id)
             .join(batch_challenges, batch_challenges.c.challenge_batch_fk == challenge_batches.c.id)
             .join(scores, scores.c.batch_challenge_fk == batch_challenges.c.id)
@@ -38,6 +41,7 @@ def v_miner_competition_rank() -> ViewDefinition:
         )
         .where(comp_challenges.c.is_active.is_(True))
         .where(miner_uploads.c.competition_fk == comp_challenges.c.competition_fk)
+        .where(miners.c.miner_banned_status.is_(False))
         .group_by(comp_challenges.c.competition_fk, challenge_batches.c.miner_fk)
         .subquery()
     )
