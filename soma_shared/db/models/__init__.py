@@ -3,6 +3,7 @@ from .admin import Admin
 from .answer import Answer
 from .batch_assignment import BatchAssignment
 from .batch_challenge import BatchChallenge
+from .batch_compressed_text import BatchCompressedText
 from .batch_challenge_score import BatchChallengeScore
 from .batch_question_answer import BatchQuestionAnswer
 from .batch_question_score import BatchQuestionScore
@@ -33,6 +34,7 @@ __all__ = [
     "Answer",
     "BatchAssignment",
     "BatchChallenge",
+    "BatchCompressedText",
     "BatchChallengeScore",
     "BatchQuestionAnswer",
     "BatchQuestionScore",
