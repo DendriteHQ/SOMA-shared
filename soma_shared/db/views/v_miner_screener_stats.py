@@ -5,6 +5,7 @@ import sqlalchemy as sa
 from soma_shared.db.models.batch_challenge import BatchChallenge
 from soma_shared.db.models.batch_challenge_score import BatchChallengeScore
 from soma_shared.db.models.challenge_batch import ChallengeBatch
+from soma_shared.db.models.miner import Miner
 from soma_shared.db.models.miner_upload import MinerUpload
 from soma_shared.db.models.screener import Screener
 from soma_shared.db.models.screening_challenge import ScreeningChallenge
@@ -16,6 +17,7 @@ from .base import ViewDefinition, view_table, weight, weighted_score
 def v_miner_screener_stats() -> ViewDefinition:
     challenge_batches = ChallengeBatch.__table__
     scripts = Script.__table__
+    miners = Miner.__table__
     miner_uploads = MinerUpload.__table__
     batch_challenges = BatchChallenge.__table__
     scores = BatchChallengeScore.__table__
@@ -24,6 +26,7 @@ def v_miner_screener_stats() -> ViewDefinition:
 
     from_clause = (
         challenge_batches.join(scripts, scripts.c.id == challenge_batches.c.script_fk)
+        .join(miners, miners.c.id == scripts.c.miner_fk)
         .join(miner_uploads, miner_uploads.c.script_fk == scripts.c.id)
         .join(
             batch_challenges,
@@ -65,6 +68,7 @@ def v_miner_screener_stats() -> ViewDefinition:
         )
         .select_from(from_clause)
         .where(screeners.c.is_active.is_(True))
+        .where(miners.c.miner_banned_status.is_(False))
         .group_by(miner_uploads.c.competition_fk, challenge_batches.c.miner_fk)
     )
 
