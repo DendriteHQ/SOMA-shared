@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import (
 import logging
 
 from soma_shared.db.models.base import Base
+from soma_shared.db.views import create_or_replace_views
 
 _engine: AsyncEngine | None = None
 _sessionmaker: async_sessionmaker[AsyncSession] | None = None
@@ -42,6 +43,8 @@ async def init_db(dsn:Any, echo:bool, pool_size:int, max_overflow:int) -> None:
         _sessionmaker = async_sessionmaker(bind=_engine, expire_on_commit=False)
         async with _engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
+            if _engine.dialect.name == "postgresql":
+                await create_or_replace_views(conn)
         logger.info("db_initialized")
 
 
@@ -73,6 +76,8 @@ async def clear_db() -> None:
             else:
                 await conn.run_sync(Base.metadata.drop_all)
             await conn.run_sync(Base.metadata.create_all)
+            if _engine.dialect.name == "postgresql":
+                await create_or_replace_views(conn)
         logger.info("db_cleared")
     except Exception:
         logger.exception("db_clear_failed")
