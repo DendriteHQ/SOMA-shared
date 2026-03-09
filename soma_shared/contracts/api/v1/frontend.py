@@ -26,6 +26,11 @@ class Pagination(BaseModel):
     total_pages: int
 
 
+class MinerCompetitionItem(BaseModel):
+    competition_id: int
+    competition_name: str
+
+
 class MinerListItem(BaseModel):
     uid: int
     hotkey: str
@@ -33,6 +38,7 @@ class MinerListItem(BaseModel):
     last_submit: Optional[datetime] = None
     status: str
     screener_score: Optional[float] = None
+    competitions: list[MinerCompetitionItem] = Field(default_factory=list)
 
 
 class MinersListResponse(BaseModel):
@@ -137,3 +143,12 @@ class ScreenerChallengesResponse(BaseModel):
     total_miners: int = 0
     challenges: list[ChallengeDetail]
     total: int
+
+
+class CurrentCompetitionTimeframeResponse(BaseModel):
+    competition_id: int
+    competition_name: str
+    upload_start: datetime
+    upload_end: datetime
+    evaluation_start: datetime
+    evaluation_end: datetime
