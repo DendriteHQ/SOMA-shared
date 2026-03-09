@@ -11,7 +11,7 @@ class ExecuteBatchRequest(BaseModel):
     """Request to execute a batch of compression tasks."""
     
     batch_id: str = Field(..., description="Unique identifier for this batch (used for logging)")
-    challenge_code: str = Field(..., description="Python code to execute")
+    script_s3_key: str = Field(..., description="S3 key for the miner's challenge script")
     challenge_texts: List[str] = Field(..., description="Texts to compress")
     compression_ratios: List[Optional[float]] = Field(
         ..., description="Target compression ratios"
