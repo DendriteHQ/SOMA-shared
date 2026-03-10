@@ -264,7 +264,7 @@ def verify_payload_model(
     if verbose:
         with open("payload_debug.txt", "w", encoding="utf-8") as f:
             f.write(payload_str)
-    logging.info(f"Verifying payload: {hashlib.md5(payload_str.encode("utf-8")).hexdigest()}")
+    logging.info(f"Verifying payload: {hashlib.md5(payload_str.encode('utf-8')).hexdigest()}")
     return verify_str_signature(
         payload_str,
         nonce=nonce,
