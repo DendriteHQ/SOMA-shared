@@ -1,17 +1,17 @@
 from __future__ import annotations
 
+import json
 import logging
 from datetime import datetime, timezone
 from typing import Any
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import text
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from soma_shared.db.models.miner import Miner
 from soma_shared.db.models.request import Request
-from soma_shared.db.models.signed_request import SignedRequest
 
 logger = logging.getLogger(__name__)
 
@@ -29,90 +29,88 @@ async def log_miner_message(
     payload: Any,
     status_code: int | None = None,
 ) -> None:
-    payload_value: Any
     if isinstance(payload, (dict, list)):
-        payload_value = payload
+        payload_value: Any = payload
     else:
         payload_value = {"raw": str(payload)}
-    created_at = datetime.now(timezone.utc)
+
+    now = datetime.now(timezone.utc)
     external_request_id = request_id or uuid.uuid4().hex
     method_value = (method or "").strip() or "UNKNOWN"
+
     try:
-        request_entry = None
-        result = await session.execute(
-            select(Request).where(Request.external_request_id == external_request_id)
-        )
-        request_entry = result.scalars().first()
-
-        if direction == "request":
-            if request_entry is None:
-                request_entry = Request(
-                    external_request_id=external_request_id,
-                    endpoint=endpoint,
-                    method=method_value,
-                    created_at=created_at,
-                    payload=payload_value,
-                    status_code=status_code,
-                )
-                session.add(request_entry)
-            else:
-                request_entry.endpoint = endpoint
-                request_entry.method = method_value
-                request_entry.created_at = created_at
-                request_entry.payload = payload_value
-                if status_code is not None:
-                    request_entry.status_code = status_code
-
-            if signature and nonce and signer_ss58:
-                if request_entry.id is None:
-                    await session.flush()
-                signed_entry = None
-                result = await session.execute(
-                    select(SignedRequest).where(
-                        SignedRequest.request_fk == request_entry.id
+        if direction == "request" and signature and nonce and signer_ss58:
+            # Single round-trip: upsert requests, resolve miner FK by ss58,
+            # upsert signed_requests — all in one CTE.
+            await session.execute(
+                text("""
+                    WITH req AS (
+                        INSERT INTO requests
+                            (external_request_id, endpoint, method, created_at, payload, status_code)
+                        VALUES
+                            (:eid, :endpoint, :method, :created_at, CAST(:payload AS jsonb), :status_code)
+                        ON CONFLICT (external_request_id) DO UPDATE SET
+                            endpoint    = EXCLUDED.endpoint,
+                            method      = EXCLUDED.method,
+                            payload     = EXCLUDED.payload,
+                            status_code = EXCLUDED.status_code
+                        RETURNING id
                     )
-                )
-                signed_entry = result.scalars().first()
-                signer_miner_fk = None
-                miner_result = await session.execute(
-                    select(Miner).where(Miner.ss58 == signer_ss58)
-                )
-                miner = miner_result.scalars().first()
-                if miner is not None:
-                    signer_miner_fk = miner.id
-
-                if signed_entry is None:
-                    signed_entry = SignedRequest(
-                        request_fk=request_entry.id,
-                        signature=signature,
-                        nonce=nonce,
-                        signer_validator_fk=None,
-                        signer_miner_fk=signer_miner_fk,
-                        signer_ss58=signer_ss58,
-                    )
-                    session.add(signed_entry)
-                else:
-                    signed_entry.signature = signature
-                    signed_entry.nonce = nonce
-                    signed_entry.signer_validator_fk = None
-                    signed_entry.signer_miner_fk = signer_miner_fk
-                    signed_entry.signer_ss58 = signer_ss58
+                    INSERT INTO signed_requests
+                        (request_fk, signature, nonce, signer_ss58,
+                         signer_validator_fk, signer_miner_fk, created_at)
+                    SELECT
+                        req.id,
+                        :signature,
+                        :nonce,
+                        :signer_ss58,
+                        NULL,
+                        (SELECT id FROM miners WHERE ss58 = :signer_ss58),
+                        :created_at
+                    FROM req
+                    ON CONFLICT (request_fk) DO UPDATE SET
+                        signature       = EXCLUDED.signature,
+                        nonce           = EXCLUDED.nonce,
+                        signer_ss58     = EXCLUDED.signer_ss58,
+                        signer_miner_fk = EXCLUDED.signer_miner_fk
+                """),
+                {
+                    "eid": external_request_id,
+                    "endpoint": endpoint,
+                    "method": method_value,
+                    "created_at": now,
+                    "payload": json.dumps(payload_value),
+                    "status_code": status_code,
+                    "signature": signature,
+                    "nonce": nonce,
+                    "signer_ss58": signer_ss58,
+                },
+            )
         else:
-            if request_entry is None:
-                session.add(
-                    Request(
-                        external_request_id=external_request_id,
-                        endpoint=endpoint,
-                        method=method_value,
-                        created_at=created_at,
-                        payload=payload_value,
-                        status_code=status_code,
-                    )
-                )
+            stmt = pg_insert(Request).values(
+                external_request_id=external_request_id,
+                endpoint=endpoint,
+                method=method_value,
+                created_at=now,
+                payload=payload_value,
+                status_code=status_code,
+            )
+            if direction == "request":
+                set_ = {
+                    "endpoint": stmt.excluded.endpoint,
+                    "method": stmt.excluded.method,
+                    "payload": stmt.excluded.payload,
+                    "status_code": stmt.excluded.status_code,
+                }
             else:
-                if status_code is not None:
-                    request_entry.status_code = status_code
+                # response — preserve original request data, only update status_code
+                set_ = {"status_code": stmt.excluded.status_code}
+            await session.execute(
+                stmt.on_conflict_do_update(index_elements=["external_request_id"], set_=set_)
+            )
+
         await session.commit()
     except SQLAlchemyError:
         await session.rollback()
         logger.exception("miner_log_write_failed")
+
