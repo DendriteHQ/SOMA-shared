@@ -246,7 +246,7 @@ def check_validator_stake(
         return False, None, "Metagraph snapshot unavailable"
     
     hotkeys = metagraph_snapshot.get("hotkeys", [])
-    stakes = metagraph_snapshot.get("alpha_stake", [])
+    stakes = metagraph_snapshot.get("stake", [])
     
     if not hotkeys or not stakes:
         logger.warning(
@@ -334,7 +334,7 @@ def is_public_ip(ip_str: str) -> bool:
 
 
 def verify_validator_stake_dep(
-    min_validator_stake: float = 10000.0,
+    min_validator_stake: float = 20000.0,
     debug: bool = False,
 ):
     """Factory returning FastAPI dependency that verifies validator stake."""
