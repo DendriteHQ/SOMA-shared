@@ -36,6 +36,19 @@ class SetMinerBannedStatusResponse(BaseModel):
     miner_banned_status: bool
 
 
+class SetValidatorStatusRequest(BaseModel):
+    ss58: str
+    current_status: str | None = None
+    is_archive: bool | None = None
+
+
+class SetValidatorStatusResponse(BaseModel):
+    ok: bool
+    ss58: str
+    current_status: str
+    is_archive: bool
+
+
 class CreateCompetitionRequest(BaseModel):
     competition_name: str
     is_active: bool = False
