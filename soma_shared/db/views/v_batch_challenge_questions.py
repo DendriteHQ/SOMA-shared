@@ -50,6 +50,7 @@ def v_batch_challenge_questions() -> ViewDefinition:
             batch_challenges.c.compression_ratio,
             challenge_batches.c.created_at,
             sa.func.avg(scores.c.score).label("overall_score"),
+            sa.func.max(scores.c.created_at).label("scored_at"),
             # --- per-question ---
             questions.c.id.label("question_id"),
             questions.c.question.label("question_text"),
