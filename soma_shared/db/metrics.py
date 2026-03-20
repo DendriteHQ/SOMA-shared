@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import Counter, deque
+from contextvars import ContextVar, Token
 from dataclasses import dataclass
 import logging
 import threading
@@ -42,6 +43,85 @@ class DatabaseMetricsSnapshot:
     pool_checkin_count: int
     operation_counts: dict[str, int]
     slow_queries: list[SlowQuerySample]
+    slowest_query: SlowQuerySample | None
+
+
+class _ScopedMetricsState:
+    def __init__(
+        self,
+        *,
+        started_at: float,
+        slow_query_threshold_seconds: float,
+        max_slow_query_samples: int,
+    ) -> None:
+        self.started_at = started_at
+        self.slow_query_threshold_seconds = slow_query_threshold_seconds
+        self.max_slow_query_samples = max_slow_query_samples
+        self.total_queries = 0
+        self.total_errors = 0
+        self.total_duration_ms = 0.0
+        self.max_duration_ms = 0.0
+        self.slow_query_count = 0
+        self.pool_connect_count = 0
+        self.pool_checkout_count = 0
+        self.pool_checkin_count = 0
+        self.operation_counts: Counter[str] = Counter()
+        self.slow_queries: deque[SlowQuerySample] = deque(
+            maxlen=max(0, max_slow_query_samples)
+        )
+        self.slowest_query: SlowQuerySample | None = None
+
+    def record_query(self, *, operation: str, duration_ms: float, sample: SlowQuerySample) -> None:
+        self.total_queries += 1
+        self.total_duration_ms += duration_ms
+        self.max_duration_ms = max(self.max_duration_ms, duration_ms)
+        self.operation_counts[operation] += 1
+        if self.slowest_query is None or duration_ms >= self.slowest_query.duration_ms:
+            self.slowest_query = sample
+        if duration_ms >= self.slow_query_threshold_seconds * 1000.0:
+            self.slow_query_count += 1
+            if self.slow_queries.maxlen:
+                self.slow_queries.append(sample)
+
+    def record_error(self, *, operation: str, duration_ms: float | None, sample: SlowQuerySample) -> None:
+        self.total_queries += 1
+        self.total_errors += 1
+        self.operation_counts[operation] += 1
+        self.operation_counts[f"{operation}_error"] += 1
+        if duration_ms is not None:
+            self.total_duration_ms += duration_ms
+            self.max_duration_ms = max(self.max_duration_ms, duration_ms)
+            if self.slowest_query is None or duration_ms >= self.slowest_query.duration_ms:
+                self.slowest_query = sample
+
+    def snapshot(self) -> DatabaseMetricsSnapshot:
+        avg_duration_ms = (
+            self.total_duration_ms / self.total_queries if self.total_queries else 0.0
+        )
+        return DatabaseMetricsSnapshot(
+            enabled=True,
+            started_at=self.started_at,
+            collected_at=time.time(),
+            total_queries=self.total_queries,
+            total_errors=self.total_errors,
+            total_duration_ms=self.total_duration_ms,
+            avg_duration_ms=avg_duration_ms,
+            max_duration_ms=self.max_duration_ms,
+            slow_query_count=self.slow_query_count,
+            slow_query_threshold_ms=self.slow_query_threshold_seconds * 1000.0,
+            pool_connect_count=self.pool_connect_count,
+            pool_checkout_count=self.pool_checkout_count,
+            pool_checkin_count=self.pool_checkin_count,
+            operation_counts=dict(self.operation_counts),
+            slow_queries=list(self.slow_queries),
+            slowest_query=self.slowest_query,
+        )
+
+
+_CURRENT_REQUEST_METRICS: ContextVar[_ScopedMetricsState | None] = ContextVar(
+    "soma_current_request_metrics",
+    default=None,
+)
 
 
 class DatabaseMetricsCollector:
@@ -62,6 +142,24 @@ class DatabaseMetricsCollector:
         self._lock = threading.Lock()
         self._installed = False
         self.reset()
+
+    def begin_request_scope(self) -> Token[_ScopedMetricsState | None]:
+        return _CURRENT_REQUEST_METRICS.set(
+            _ScopedMetricsState(
+                started_at=time.time(),
+                slow_query_threshold_seconds=self._slow_query_threshold_seconds,
+                max_slow_query_samples=self._slow_queries.maxlen or 0,
+            )
+        )
+
+    def end_request_scope(self, token: Token[_ScopedMetricsState | None]) -> None:
+        _CURRENT_REQUEST_METRICS.reset(token)
+
+    def current_request_snapshot(self) -> DatabaseMetricsSnapshot | None:
+        state = _CURRENT_REQUEST_METRICS.get()
+        if state is None:
+            return None
+        return state.snapshot()
 
     def install(self, engine: AsyncEngine) -> None:
         if self._installed:
@@ -156,6 +254,7 @@ class DatabaseMetricsCollector:
                 pool_checkin_count=self._pool_checkin_count,
                 operation_counts=dict(self._operation_counts),
                 slow_queries=list(self._slow_queries),
+                slowest_query=self._slowest_query,
             )
 
     def reset(self) -> None:
@@ -171,6 +270,7 @@ class DatabaseMetricsCollector:
             self._pool_checkin_count = 0
             self._operation_counts: Counter[str] = Counter()
             self._slow_queries.clear()
+            self._slowest_query: SlowQuerySample | None = None
 
     def _consume_duration_ms(self, connection: Any) -> float | None:
         if connection is None:
@@ -190,25 +290,32 @@ class DatabaseMetricsCollector:
     ) -> None:
         operation = _classify_statement(statement)
         is_slow_query = duration_ms >= self._slow_query_threshold_seconds * 1000.0
-        slow_query_sample = None
-
-        if is_slow_query:
-            slow_query_sample = SlowQuerySample(
-                operation=operation,
-                duration_ms=duration_ms,
-                rowcount=rowcount if rowcount is not None and rowcount >= 0 else None,
-                statement_preview=_truncate_statement(statement),
-            )
+        sample = SlowQuerySample(
+            operation=operation,
+            duration_ms=duration_ms,
+            rowcount=rowcount if rowcount is not None and rowcount >= 0 else None,
+            statement_preview=_truncate_statement(statement),
+        )
 
         with self._lock:
             self._total_queries += 1
             self._total_duration_ms += duration_ms
             self._max_duration_ms = max(self._max_duration_ms, duration_ms)
             self._operation_counts[operation] += 1
+            if self._slowest_query is None or duration_ms >= self._slowest_query.duration_ms:
+                self._slowest_query = sample
             if is_slow_query:
                 self._slow_query_count += 1
                 if self._slow_queries.maxlen:
-                    self._slow_queries.append(slow_query_sample)
+                    self._slow_queries.append(sample)
+
+        current_state = _CURRENT_REQUEST_METRICS.get()
+        if current_state is not None:
+            current_state.record_query(
+                operation=operation,
+                duration_ms=duration_ms,
+                sample=sample,
+            )
 
         if is_slow_query and self._log_slow_queries:
             self._logger.warning(
@@ -223,6 +330,12 @@ class DatabaseMetricsCollector:
 
     def _record_error(self, *, statement: str, duration_ms: float | None) -> None:
         operation = _classify_statement(statement)
+        sample = SlowQuerySample(
+            operation=operation,
+            duration_ms=duration_ms or 0.0,
+            rowcount=None,
+            statement_preview=_truncate_statement(statement),
+        )
         with self._lock:
             self._total_queries += 1
             self._total_errors += 1
@@ -231,6 +344,16 @@ class DatabaseMetricsCollector:
             if duration_ms is not None:
                 self._total_duration_ms += duration_ms
                 self._max_duration_ms = max(self._max_duration_ms, duration_ms)
+                if self._slowest_query is None or duration_ms >= self._slowest_query.duration_ms:
+                    self._slowest_query = sample
+
+        current_state = _CURRENT_REQUEST_METRICS.get()
+        if current_state is not None:
+            current_state.record_error(
+                operation=operation,
+                duration_ms=duration_ms,
+                sample=sample,
+            )
 
 
 def _classify_statement(statement: str) -> str:
