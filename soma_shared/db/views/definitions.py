@@ -2,16 +2,29 @@ from __future__ import annotations
 
 from .base import ViewDefinition
 from .v_active_competition import v_active_competition
-from .v_miner_competition_rank import v_miner_competition_rank
-from .v_miner_screener_eligible_ranked import v_miner_screener_eligible_ranked
+from .v_competition_challenges import v_competition_challenges
+from .v_miner_competition_stats import v_miner_competition_stats
 from .v_miner_screener_stats import v_miner_screener_stats
-from .v_screener_challenges_active import v_screener_challenges_active
+from .v_miner_status import v_miner_status
+from .v_miner_screener_eligible_ranked import v_miner_screener_eligible_ranked
 
-
+# Regular (live) views — used by backend for real-time data.
 VIEW_DEFINITIONS: tuple[ViewDefinition, ...] = (
     v_active_competition(),
-    v_screener_challenges_active(),
+    v_competition_challenges(),
     v_miner_screener_stats(),
+    v_miner_competition_stats(),
+    v_miner_status(),
     v_miner_screener_eligible_ranked(),
-    v_miner_competition_rank(),
+)
+
+# Materialized views — snapshots of the heavy regular views above.
+# Frontend reads from these; they are refreshed periodically in the background.
+# Each entry mirrors a regular view but with materialized=True and a unique
+# index definition (required for REFRESH MATERIALIZED VIEW CONCURRENTLY).
+MV_DEFINITIONS: tuple[ViewDefinition, ...] = (
+    v_competition_challenges(materialized=True, unique_index_columns=("competition_id", "challenge_id")),
+    v_miner_screener_stats(materialized=True, unique_index_columns=("competition_id", "ss58")),
+    v_miner_competition_stats(materialized=True, unique_index_columns=("competition_id", "ss58")),
+    v_miner_status(materialized=True, unique_index_columns=("competition_id", "ss58")),
 )
