@@ -15,7 +15,7 @@ VIEW_DEFINITIONS: tuple[ViewDefinition, ...] = (
     v_miner_screener_stats(),
     v_miner_competition_stats(),
     v_miner_status(),
-    v_miner_screener_eligible_ranked(),
+    v_miner_screener_eligible_ranked()
 )
 
 # Materialized views — snapshots of the heavy regular views above.
