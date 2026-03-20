@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from sqlalchemy import BigInteger, DateTime, String
+from sqlalchemy import BigInteger, Boolean, DateTime, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .base import Base
@@ -25,3 +25,8 @@ class Validator(Base):
         nullable=True,
     )
     current_status: Mapped[str] = mapped_column(String(32), nullable=False)
+    is_archive: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+    )
