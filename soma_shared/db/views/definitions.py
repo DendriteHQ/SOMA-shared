@@ -6,7 +6,7 @@ from .v_competition_challenges import v_competition_challenges
 from .v_miner_competition_stats import v_miner_competition_stats
 from .v_miner_screener_stats import v_miner_screener_stats
 from .v_miner_status import v_miner_status
-
+from .v_miner_screener_eligible_ranked import v_miner_screener_eligible_ranked
 
 # Regular (live) views — used by backend for real-time data.
 VIEW_DEFINITIONS: tuple[ViewDefinition, ...] = (
@@ -15,6 +15,7 @@ VIEW_DEFINITIONS: tuple[ViewDefinition, ...] = (
     v_miner_screener_stats(),
     v_miner_competition_stats(),
     v_miner_status(),
+    v_miner_screener_eligible_ranked()
 )
 
 # Materialized views — snapshots of the heavy regular views above.
