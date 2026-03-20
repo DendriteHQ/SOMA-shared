@@ -13,6 +13,8 @@ from soma_shared.db.models.miner import Miner
 from soma_shared.db.models.request import Request
 from soma_shared.db.models.signed_request import SignedRequest
 from soma_shared.db.models.validator import Validator
+from soma_shared.db.request_metrics import apply_db_metrics_snapshot_to_request
+from soma_shared.db.session import get_current_db_request_metrics_snapshot
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +41,7 @@ async def log_validator_message(
     created_at = datetime.now(timezone.utc)
     external_request_id = request_id or uuid.uuid4().hex
     method_value = (method or "").strip() or "UNKNOWN"
+    metrics_snapshot = get_current_db_request_metrics_snapshot()
     try:
         request_entry = None
         result = await session.execute(
@@ -64,6 +67,7 @@ async def log_validator_message(
                 request_entry.payload = payload_value
                 if status_code is not None:
                     request_entry.status_code = status_code
+            apply_db_metrics_snapshot_to_request(request_entry, metrics_snapshot)
 
             if signature and nonce and signer_ss58:
                 if request_entry.id is None:
@@ -110,19 +114,20 @@ async def log_validator_message(
                     signed_entry.signer_ss58 = signer_ss58
         else:
             if request_entry is None:
-                session.add(
-                    Request(
-                        external_request_id=external_request_id,
-                        endpoint=endpoint,
-                        method=method_value,
-                        created_at=created_at,
-                        payload=payload_value,
-                        status_code=status_code,
-                    )
+                request_entry = Request(
+                    external_request_id=external_request_id,
+                    endpoint=endpoint,
+                    method=method_value,
+                    created_at=created_at,
+                    payload=payload_value,
+                    status_code=status_code,
                 )
+                apply_db_metrics_snapshot_to_request(request_entry, metrics_snapshot)
+                session.add(request_entry)
             else:
                 if status_code is not None:
                     request_entry.status_code = status_code
+                apply_db_metrics_snapshot_to_request(request_entry, metrics_snapshot)
         await session.commit()
     except SQLAlchemyError:
         await session.rollback()
