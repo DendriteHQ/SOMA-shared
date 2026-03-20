@@ -184,13 +184,19 @@ def v_miner_status(
             miners.c.id.label("miner_id"),
             miners.c.ss58.label("ss58"),
             miners.c.miner_banned_status.label("is_banned"),
+            sa.func.max(miner_uploads.c.created_at).label("last_submit_at"),
         )
         .select_from(
             miner_uploads
             .join(scripts, scripts.c.id == miner_uploads.c.script_fk)
             .join(miners, miners.c.id == scripts.c.miner_fk)
         )
-        .distinct()
+        .group_by(
+            miner_uploads.c.competition_fk,
+            miners.c.id,
+            miners.c.ss58,
+            miners.c.miner_banned_status,
+        )
         .subquery()
     )
 
@@ -214,6 +220,7 @@ def v_miner_status(
         ).label("pending_assignments_competition"),
         eligible_screener_sq.c.screener_rank,
         eligible_screener_sq.c.total_eligible_screener,
+        base_sq.c.last_submit_at,
     ).select_from(
         base_sq
         .outerjoin(
