@@ -14,7 +14,10 @@ from soma_shared.db.models.script import Script
 from .base import ViewDefinition, view_table, weight, weighted_score
 
 
-def v_miner_screener_stats() -> ViewDefinition:
+def v_miner_screener_stats(
+    materialized: bool = False,
+    unique_index_columns: tuple[str, ...] = (),
+) -> ViewDefinition:
     challenge_batches = ChallengeBatch.__table__
     scripts = Script.__table__
     miners = Miner.__table__
@@ -55,22 +58,45 @@ def v_miner_screener_stats() -> ViewDefinition:
         else_=0.0,
     )
 
-    selectable = (
+    base = (
         sa.select(
             miner_uploads.c.competition_fk.label("competition_id"),
-            challenge_batches.c.miner_fk.label("miner_id"),
-            sa.func.count(sa.distinct(batch_challenges.c.id)).label("screener_assigned"),
-            sa.func.count(sa.distinct(scores.c.batch_challenge_fk)).label("screener_scored"),
+            miners.c.ss58.label("ss58"),
+            miners.c.miner_banned_status.label("is_banned"),
             (
                 sa.func.sum(scored_score) / sa.func.nullif(sa.func.sum(scored_weight), 0)
-            ).label("avg_score"),
+            ).label("total_screener_score"),
             sa.func.min(miner_uploads.c.created_at).label("first_upload_at"),
         )
         .select_from(from_clause)
         .where(screeners.c.is_active.is_(True))
-        .where(miners.c.miner_banned_status.is_(False))
-        .group_by(miner_uploads.c.competition_fk, challenge_batches.c.miner_fk)
+        .group_by(miner_uploads.c.competition_fk, miners.c.ss58, miners.c.miner_banned_status)
+        .subquery()
     )
 
-    table = view_table("v_miner_screener_stats")
-    return ViewDefinition(name=table.name, table=table, selectable=selectable)
+    selectable = sa.select(
+        base.c.competition_id,
+        base.c.ss58,
+        base.c.is_banned,
+        base.c.total_screener_score,
+        base.c.first_upload_at,
+        sa.func.row_number()
+        .over(
+            partition_by=base.c.competition_id,
+            order_by=(
+                base.c.total_screener_score.desc().nullslast(),
+                base.c.first_upload_at.asc().nullsfirst(),
+                base.c.ss58.asc(),
+            ),
+        )
+        .label("screener_rank"),
+    )
+    name = "mv_miner_screener_stats" if materialized else "v_miner_screener_stats"
+    table = view_table(name)
+    return ViewDefinition(
+        name=table.name,
+        table=table,
+        selectable=selectable,
+        materialized=materialized,
+        unique_index_columns=unique_index_columns,
+    )

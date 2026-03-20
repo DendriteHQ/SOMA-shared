@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Optional
 
 import sqlalchemy as sa
 
@@ -10,6 +11,10 @@ class ViewDefinition:
     name: str
     table: sa.Table
     selectable: sa.sql.Select
+    # When True, this view should be created as a MATERIALIZED VIEW.
+    # unique_index_columns is required for REFRESH CONCURRENTLY support.
+    materialized: bool = False
+    unique_index_columns: tuple[str, ...] = field(default_factory=tuple)
 
 
 _VIEW_METADATA = sa.MetaData()
