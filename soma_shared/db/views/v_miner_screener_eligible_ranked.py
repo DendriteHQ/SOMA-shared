@@ -15,7 +15,7 @@ from .base import ViewDefinition, view_table
 from .v_miner_screener_stats import v_miner_screener_stats
 
 
-def v_miner_screener_qualified() -> ViewDefinition:
+def v_miner_screener_eligible_ranked() -> ViewDefinition:
     stats = v_miner_screener_stats().selectable.subquery("miner_screener_stats")
     configs = CompetitionConfig.__table__
     compression_configs = CompressionCompetitionConfig.__table__
@@ -147,5 +147,5 @@ def v_miner_screener_qualified() -> ViewDefinition:
         .label("total_eligible"),
     )
 
-    table = view_table("v_miner_screener_qualified")
+    table = view_table("v_miner_screener_eligible_ranked")
     return ViewDefinition(name=table.name, table=table, selectable=selectable)

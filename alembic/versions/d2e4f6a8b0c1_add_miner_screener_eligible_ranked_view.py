@@ -1,4 +1,4 @@
-"""Add view for ranked screener-qualified miners.
+"""Add view for ranked screener-eligible miners.
 
 Revision ID: d2e4f6a8b0c1
 Revises: c9b8e7a6d5f4
@@ -36,4 +36,4 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.execute(sa.text("DROP VIEW IF EXISTS v_miner_screener_qualified"))
+    op.execute(sa.text("DROP VIEW IF EXISTS v_miner_screener_eligible_ranked"))
