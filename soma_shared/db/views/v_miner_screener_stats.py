@@ -94,6 +94,12 @@ def v_miner_screener_stats(
         .over(partition_by=base.c.competition_id)
         .label("total_screener_miners"),
     )
-
-    table = view_table("v_miner_screener_stats")
-    return ViewDefinition(name=table.name, table=table, selectable=selectable)
+    name = "mv_miner_screener_stats" if materialized else "v_miner_screener_stats"
+    table = view_table(name)
+    return ViewDefinition(
+        name=table.name,
+        table=table,
+        selectable=selectable,
+        materialized=materialized,
+        unique_index_columns=unique_index_columns,
+    )
