@@ -192,6 +192,23 @@ def get_db_metrics_snapshot() -> DatabaseMetricsSnapshot | None:
     return _metrics_collector.snapshot()
 
 
+def get_current_db_request_metrics_snapshot() -> DatabaseMetricsSnapshot | None:
+    if _metrics_collector is None:
+        return None
+    return _metrics_collector.current_request_snapshot()
+
+
+def begin_db_request_metrics_scope() -> Any | None:
+    if _metrics_collector is None:
+        return None
+    return _metrics_collector.begin_request_scope()
+
+
+def end_db_request_metrics_scope(token: Any | None) -> None:
+    if _metrics_collector is not None and token is not None:
+        _metrics_collector.end_request_scope(token)
+
+
 def reset_db_metrics() -> None:
     if _metrics_collector is not None:
         _metrics_collector.reset()
