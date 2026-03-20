@@ -90,9 +90,6 @@ def v_miner_screener_stats(
             ),
         )
         .label("screener_rank"),
-        sa.func.count(sa.literal(1))
-        .over(partition_by=base.c.competition_id)
-        .label("total_screener_miners"),
     )
     name = "mv_miner_screener_stats" if materialized else "v_miner_screener_stats"
     table = view_table(name)
