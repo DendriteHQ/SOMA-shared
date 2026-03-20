@@ -13,7 +13,10 @@ from soma_shared.db.models.script import Script
 from .base import ViewDefinition, view_table, weighted_avg
 
 
-def v_miner_competition_rank() -> ViewDefinition:
+def v_miner_competition_stats(
+    materialized: bool = False,
+    unique_index_columns: tuple[str, ...] = (),
+) -> ViewDefinition:
     challenge_batches = ChallengeBatch.__table__
     scripts = Script.__table__
     miners = Miner.__table__
@@ -25,46 +28,52 @@ def v_miner_competition_rank() -> ViewDefinition:
     base = (
         sa.select(
             comp_challenges.c.competition_fk.label("competition_id"),
-            challenge_batches.c.miner_fk.label("miner_id"),
+            miners.c.ss58.label("ss58"),
+            miners.c.miner_banned_status.label("is_banned"),
             weighted_avg(scores.c.score, batch_challenges.c.compression_ratio).label(
                 "total_score"
             ),
-            sa.func.min(scripts.c.created_at).label("first_upload"),
+            sa.func.min(miner_uploads.c.created_at).label("first_upload_at"),
         )
         .select_from(
-            challenge_batches.join(scripts, scripts.c.id == challenge_batches.c.script_fk)
+            challenge_batches
+            .join(scripts, scripts.c.id == challenge_batches.c.script_fk)
             .join(miners, miners.c.id == scripts.c.miner_fk)
             .join(miner_uploads, miner_uploads.c.script_fk == scripts.c.id)
             .join(batch_challenges, batch_challenges.c.challenge_batch_fk == challenge_batches.c.id)
-            .join(scores, scores.c.batch_challenge_fk == batch_challenges.c.id)
+            .outerjoin(scores, scores.c.batch_challenge_fk == batch_challenges.c.id)
             .join(comp_challenges, comp_challenges.c.challenge_fk == batch_challenges.c.challenge_fk)
         )
         .where(comp_challenges.c.is_active.is_(True))
         .where(miner_uploads.c.competition_fk == comp_challenges.c.competition_fk)
-        .where(miners.c.miner_banned_status.is_(False))
-        .group_by(comp_challenges.c.competition_fk, challenge_batches.c.miner_fk)
+        .group_by(comp_challenges.c.competition_fk, miners.c.ss58, miners.c.miner_banned_status)
         .subquery()
     )
 
     selectable = sa.select(
         base.c.competition_id,
-        base.c.miner_id,
+        base.c.ss58,
+        base.c.is_banned,
         base.c.total_score,
-        base.c.first_upload,
+        base.c.first_upload_at,
         sa.func.row_number()
         .over(
             partition_by=base.c.competition_id,
             order_by=(
                 base.c.total_score.desc().nullslast(),
-                base.c.first_upload.asc().nullsfirst(),
-                base.c.miner_id.asc(),
+                base.c.first_upload_at.asc().nullsfirst(),
+                base.c.ss58.asc(),
             ),
         )
-        .label("rank"),
-        sa.func.count(sa.literal(1))
-        .over(partition_by=base.c.competition_id)
-        .label("total_miners"),
+        .label("rank")
     )
 
-    table = view_table("v_miner_competition_rank")
-    return ViewDefinition(name=table.name, table=table, selectable=selectable)
+    name = "mv_miner_competition_stats" if materialized else "v_miner_competition_stats"
+    table = view_table(name)
+    return ViewDefinition(
+        name=table.name,
+        table=table,
+        selectable=selectable,
+        materialized=materialized,
+        unique_index_columns=unique_index_columns,
+    )
