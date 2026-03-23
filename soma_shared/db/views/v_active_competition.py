@@ -34,6 +34,8 @@ def v_active_competition() -> ViewDefinition:
         )
         .where(configs.c.is_active.is_(True))
         .where(timeframes.c.eval_ends_at > sa.func.now())
+        .order_by(timeframes.c.eval_ends_at.desc())
+        .limit(1)
     )
 
     table = view_table("v_active_competition")
