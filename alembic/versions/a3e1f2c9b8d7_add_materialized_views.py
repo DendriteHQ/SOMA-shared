@@ -19,7 +19,7 @@ from sqlalchemy.dialects import postgresql
 from soma_shared.db.views.definitions import MV_DEFINITIONS, VIEW_DEFINITIONS
 
 revision = "a3e1f2c9b8d7"
-down_revision = "f1c9a7b4d2e3"
+down_revision = "d2e4f6a8b0c1"
 branch_labels = None
 depends_on = None
 
@@ -38,8 +38,18 @@ def upgrade() -> None:
     for mv in reversed(MV_DEFINITIONS):
         op.execute(sa.text(f"DROP MATERIALIZED VIEW IF EXISTS {mv.name} CASCADE"))
 
-    # 2. Recreate regular views (CREATE OR REPLACE preserves dependent objects
-    #    where possible; we drop MVs above so there are no dependents left).
+    # 2. Drop legacy views that have been removed from VIEW_DEFINITIONS.
+    _LEGACY_VIEWS = [
+        "v_miner_competition_rank",
+        "v_screener_challenges_active",
+    ]
+    for name in _LEGACY_VIEWS:
+        op.execute(sa.text(f"DROP VIEW IF EXISTS {name} CASCADE"))
+
+    # 3. Recreate regular views — drop first so column renames are allowed,
+    #    then recreate. MVs are already dropped above so no dependents remain.
+    for view_def in reversed(VIEW_DEFINITIONS):
+        op.execute(sa.text(f"DROP VIEW IF EXISTS {view_def.name} CASCADE"))
     for view_def in VIEW_DEFINITIONS:
         sql = _compile(view_def.selectable)
         op.execute(sa.text(f"CREATE OR REPLACE VIEW {view_def.name} AS {sql}"))

@@ -100,9 +100,9 @@ def v_miner_screener_eligible_ranked() -> ViewDefinition:
     eligible = (
         sa.select(
             stats.c.competition_id.label("competition_id"),
-            stats.c.miner_id.label("miner_id"),
+            stats.c.ss58.label("ss58"),
             miner_scripts.c.script_id.label("script_id"),
-            stats.c.avg_score.label("avg_score"),
+            stats.c.total_screener_score.label("avg_score"),
             stats.c.first_upload_at.label("first_upload_at"),
             stats.c.screener_scored.label("screener_scored"),
             required_pairs.c.screener_required.label("screener_required"),
@@ -126,7 +126,7 @@ def v_miner_screener_eligible_ranked() -> ViewDefinition:
 
     selectable = sa.select(
         eligible.c.competition_id,
-        eligible.c.miner_id,
+        eligible.c.ss58,
         eligible.c.script_id,
         eligible.c.avg_score,
         eligible.c.first_upload_at,
@@ -138,7 +138,7 @@ def v_miner_screener_eligible_ranked() -> ViewDefinition:
             order_by=(
                 eligible.c.avg_score.desc().nullslast(),
                 eligible.c.first_upload_at.asc().nullsfirst(),
-                eligible.c.miner_id.asc(),
+                eligible.c.ss58.asc(),
             ),
         )
         .label("rank"),

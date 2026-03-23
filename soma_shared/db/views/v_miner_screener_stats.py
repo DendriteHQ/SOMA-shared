@@ -61,24 +61,28 @@ def v_miner_screener_stats(
     base = (
         sa.select(
             miner_uploads.c.competition_fk.label("competition_id"),
+            miners.c.id.label("miner_id"),
             miners.c.ss58.label("ss58"),
             miners.c.miner_banned_status.label("is_banned"),
             (
                 sa.func.sum(scored_score) / sa.func.nullif(sa.func.sum(scored_weight), 0)
             ).label("total_screener_score"),
+            sa.func.count(sa.distinct(scores.c.batch_challenge_fk)).label("screener_scored"),
             sa.func.min(miner_uploads.c.created_at).label("first_upload_at"),
         )
         .select_from(from_clause)
         .where(screeners.c.is_active.is_(True))
-        .group_by(miner_uploads.c.competition_fk, miners.c.ss58, miners.c.miner_banned_status)
+        .group_by(miner_uploads.c.competition_fk, miners.c.id, miners.c.ss58, miners.c.miner_banned_status)
         .subquery()
     )
 
     selectable = sa.select(
         base.c.competition_id,
+        base.c.miner_id,
         base.c.ss58,
         base.c.is_banned,
         base.c.total_screener_score,
+        base.c.screener_scored,
         base.c.first_upload_at,
         sa.func.row_number()
         .over(
