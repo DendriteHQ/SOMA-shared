@@ -35,12 +35,8 @@ class DatabaseMetricsSnapshot:
     total_errors: int
     total_duration_ms: float
     avg_duration_ms: float
-    max_duration_ms: float
     slow_query_count: int
     slow_query_threshold_ms: float
-    pool_connect_count: int
-    pool_checkout_count: int
-    pool_checkin_count: int
     operation_counts: dict[str, int]
     slow_queries: list[SlowQuerySample]
     slowest_query: SlowQuerySample | None
@@ -60,11 +56,7 @@ class _ScopedMetricsState:
         self.total_queries = 0
         self.total_errors = 0
         self.total_duration_ms = 0.0
-        self.max_duration_ms = 0.0
         self.slow_query_count = 0
-        self.pool_connect_count = 0
-        self.pool_checkout_count = 0
-        self.pool_checkin_count = 0
         self.operation_counts: Counter[str] = Counter()
         self.slow_queries: deque[SlowQuerySample] = deque(
             maxlen=max(0, max_slow_query_samples)
@@ -74,7 +66,6 @@ class _ScopedMetricsState:
     def record_query(self, *, operation: str, duration_ms: float, sample: SlowQuerySample) -> None:
         self.total_queries += 1
         self.total_duration_ms += duration_ms
-        self.max_duration_ms = max(self.max_duration_ms, duration_ms)
         self.operation_counts[operation] += 1
         if self.slowest_query is None or duration_ms >= self.slowest_query.duration_ms:
             self.slowest_query = sample
@@ -90,7 +81,6 @@ class _ScopedMetricsState:
         self.operation_counts[f"{operation}_error"] += 1
         if duration_ms is not None:
             self.total_duration_ms += duration_ms
-            self.max_duration_ms = max(self.max_duration_ms, duration_ms)
             if self.slowest_query is None or duration_ms >= self.slowest_query.duration_ms:
                 self.slowest_query = sample
 
@@ -106,12 +96,8 @@ class _ScopedMetricsState:
             total_errors=self.total_errors,
             total_duration_ms=self.total_duration_ms,
             avg_duration_ms=avg_duration_ms,
-            max_duration_ms=self.max_duration_ms,
             slow_query_count=self.slow_query_count,
             slow_query_threshold_ms=self.slow_query_threshold_seconds * 1000.0,
-            pool_connect_count=self.pool_connect_count,
-            pool_checkout_count=self.pool_checkout_count,
-            pool_checkin_count=self.pool_checkin_count,
             operation_counts=dict(self.operation_counts),
             slow_queries=list(self.slow_queries),
             slowest_query=self.slowest_query,
@@ -207,28 +193,6 @@ class DatabaseMetricsCollector:
             statement = exception_context.statement or ""
             self._record_error(statement=statement, duration_ms=duration_ms)
 
-        @event.listens_for(sync_engine, "connect")
-        def _connect(dbapi_connection: Any, connection_record: Any) -> None:
-            del dbapi_connection, connection_record
-            with self._lock:
-                self._pool_connect_count += 1
-
-        @event.listens_for(sync_engine, "checkout")
-        def _checkout(
-            dbapi_connection: Any,
-            connection_record: Any,
-            connection_proxy: Any,
-        ) -> None:
-            del dbapi_connection, connection_record, connection_proxy
-            with self._lock:
-                self._pool_checkout_count += 1
-
-        @event.listens_for(sync_engine, "checkin")
-        def _checkin(dbapi_connection: Any, connection_record: Any) -> None:
-            del dbapi_connection, connection_record
-            with self._lock:
-                self._pool_checkin_count += 1
-
         self._installed = True
 
     def snapshot(self) -> DatabaseMetricsSnapshot:
@@ -246,12 +210,8 @@ class DatabaseMetricsCollector:
                 total_errors=self._total_errors,
                 total_duration_ms=self._total_duration_ms,
                 avg_duration_ms=avg_duration_ms,
-                max_duration_ms=self._max_duration_ms,
                 slow_query_count=self._slow_query_count,
                 slow_query_threshold_ms=self._slow_query_threshold_seconds * 1000.0,
-                pool_connect_count=self._pool_connect_count,
-                pool_checkout_count=self._pool_checkout_count,
-                pool_checkin_count=self._pool_checkin_count,
                 operation_counts=dict(self._operation_counts),
                 slow_queries=list(self._slow_queries),
                 slowest_query=self._slowest_query,
@@ -263,11 +223,7 @@ class DatabaseMetricsCollector:
             self._total_queries = 0
             self._total_errors = 0
             self._total_duration_ms = 0.0
-            self._max_duration_ms = 0.0
             self._slow_query_count = 0
-            self._pool_connect_count = 0
-            self._pool_checkout_count = 0
-            self._pool_checkin_count = 0
             self._operation_counts: Counter[str] = Counter()
             self._slow_queries.clear()
             self._slowest_query: SlowQuerySample | None = None
@@ -300,7 +256,6 @@ class DatabaseMetricsCollector:
         with self._lock:
             self._total_queries += 1
             self._total_duration_ms += duration_ms
-            self._max_duration_ms = max(self._max_duration_ms, duration_ms)
             self._operation_counts[operation] += 1
             if self._slowest_query is None or duration_ms >= self._slowest_query.duration_ms:
                 self._slowest_query = sample
@@ -343,7 +298,6 @@ class DatabaseMetricsCollector:
             self._operation_counts[f"{operation}_error"] += 1
             if duration_ms is not None:
                 self._total_duration_ms += duration_ms
-                self._max_duration_ms = max(self._max_duration_ms, duration_ms)
                 if self._slowest_query is None or duration_ms >= self._slowest_query.duration_ms:
                     self._slowest_query = sample
 
