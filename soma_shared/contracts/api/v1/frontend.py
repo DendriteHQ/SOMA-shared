@@ -88,6 +88,7 @@ class ValidatorListItem(BaseModel):
     id: int
     name: str
     status: str
+    is_archive: bool = False
     register_date: datetime
 
 

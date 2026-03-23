@@ -9,18 +9,25 @@ from pydantic import BaseModel, Field
 
 class ExecuteBatchRequest(BaseModel):
     """Request to execute a batch of compression tasks."""
-    
+
     batch_id: str = Field(..., description="Unique identifier for this batch (used for logging)")
-    script_s3_key: str = Field(..., description="S3 key for the miner's challenge script")
+    script_presigned_url: str = Field(
+        ...,
+        description=(
+            "Presigned S3 URL (GET) for temporary read access to the miner's challenge script. "
+            "The sandbox uses this URL to download the script without direct S3 credentials."
+        ),
+    )
     challenge_texts: List[str] = Field(..., description="Texts to compress")
     compression_ratios: List[Optional[float]] = Field(
         ..., description="Target compression ratios"
     )
-    storage_uuids: List[str] = Field(
+    storage_presigned_urls: List[str] = Field(
         ...,
         description=(
-            "S3 storage UUIDs, one per challenge_text entry. "
-            "Each compressed result is saved under compressed-texts/{uuid}."
+            "Presigned S3 URLs (PUT), one per challenge_text entry. "
+            "The sandbox uploads each compressed result to the designated URL "
+            "without requiring direct S3 credentials."
         ),
     )
     timeout_per_task: float = Field(..., description="Timeout for each individual task in seconds")
