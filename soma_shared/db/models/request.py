@@ -33,14 +33,7 @@ class Request(Base):
         DOUBLE_PRECISION,
         nullable=True,
     )
-    db_max_duration_ms: Mapped[float | None] = mapped_column(
-        DOUBLE_PRECISION,
-        nullable=True,
-    )
     db_slow_query_count: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
-    db_pool_connect_count: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
-    db_pool_checkout_count: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
-    db_pool_checkin_count: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     db_operation_counts: Mapped[dict[str, int] | None] = mapped_column(JSON, nullable=True)
     db_slowest_query_ms: Mapped[float | None] = mapped_column(
         DOUBLE_PRECISION,
