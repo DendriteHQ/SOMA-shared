@@ -47,10 +47,9 @@ def v_miner_status(
             comp_challenges.c.competition_fk.label("competition_id"),
             sa.func.count(
                 sa.distinct(
-                    sa.func.concat(
-                        sa.cast(batch_challenges.c.challenge_fk, sa.Text),
-                        sa.literal("_"),
-                        sa.cast(batch_challenges.c.compression_ratio, sa.Text),
+                    sa.tuple_(
+                        batch_challenges.c.challenge_fk,
+                        batch_challenges.c.compression_ratio,
                     )
                 )
             ).label("competition_challenges"),
