@@ -42,7 +42,8 @@ async def refresh_materialized_views(conn: AsyncConnection) -> None:
     Requires the unique index created by create_materialized_views.
     Safe to call from a background task while the app is serving traffic.
     """
+    autocommit_conn = conn.execution_options(isolation_level="AUTOCOMMIT")
     for mv in MV_DEFINITIONS:
-        await conn.execute(
+        await autocommit_conn.execute(
             sa.text(f"REFRESH MATERIALIZED VIEW CONCURRENTLY {mv.name}")
         )
