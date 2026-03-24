@@ -1,7 +1,7 @@
 """Add database metrics columns to requests.
 
 Revision ID: 0c7e4b1d2f9a
-Revises: e5f6a7b8c9d0, f1c9a7b4d2e3
+Revises: d2e4f6a8b0c1
 Create Date: 2026-03-20
 """
 
@@ -13,7 +13,7 @@ from sqlalchemy import inspect
 
 # revision identifiers, used by Alembic.
 revision = "0c7e4b1d2f9a"
-down_revision = ("e5f6a7b8c9d0", "f1c9a7b4d2e3")
+down_revision = "d2e4f6a8b0c1"
 branch_labels = None
 depends_on = None
 

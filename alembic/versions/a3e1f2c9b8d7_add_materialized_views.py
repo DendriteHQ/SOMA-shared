@@ -1,7 +1,7 @@
 """Add materialized views for frontend (mv_*) and update regular views (v_*).
 
 Revision ID: a3e1f2c9b8d7
-Revises: f1c9a7b4d2e3
+Revises: 4a1b2c3d4e5f
 Create Date: 2026-03-20
 
 Regular views (v_*) are recreated to apply schema changes made since the last
@@ -19,7 +19,7 @@ from sqlalchemy.dialects import postgresql
 from soma_shared.db.views.definitions import MV_DEFINITIONS, VIEW_DEFINITIONS
 
 revision = "a3e1f2c9b8d7"
-down_revision = "d2e4f6a8b0c1"
+down_revision = "4a1b2c3d4e5f"
 branch_labels = None
 depends_on = None
 
