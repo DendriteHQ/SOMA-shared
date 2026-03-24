@@ -39,4 +39,8 @@ class ExecuteBatchResponse(BaseModel):
     
     success: bool = Field(..., description="Whether execution succeeded")
     batch_id: str = Field(..., description="Batch identifier")
-    error: Optional[str] = Field(default=None, description="Error message if failed")
+    error: Optional[str] = Field(default=None, description="Error message if entire batch failed")
+    task_errors: List[Optional[str]] = Field(
+        default_factory=list,
+        description="Per-task error messages, one entry per challenge_text. None if the task succeeded, error string if it failed.",
+    )
