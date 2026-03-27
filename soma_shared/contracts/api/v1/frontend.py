@@ -32,13 +32,11 @@ class MinerCompetitionItem(BaseModel):
 
 
 class MinerListItem(BaseModel):
-    uid: int
     hotkey: str
     score: Optional[float] = None
     last_submit: Optional[datetime] = None
     status: str
     screener_score: Optional[float] = None
-    competitions: list[MinerCompetitionItem] = Field(default_factory=list)
 
 
 class MinersListResponse(BaseModel):
@@ -52,11 +50,6 @@ class ContestSummary(BaseModel):
     date: datetime
     score: Optional[float] = None
     rank: Optional[int] = None
-    answered: Optional[int] = None
-    total_questions: Optional[int] = None
-    accuracy: Optional[float] = None
-    correct: Optional[int] = None
-    incorrect: Optional[int] = None
 
 
 class SourceCodeSummary(BaseModel):
@@ -65,9 +58,8 @@ class SourceCodeSummary(BaseModel):
 
 
 class MinerDetail(BaseModel):
-    uid: int
     hotkey: str
-    registered_at: datetime
+    registered_at: Optional[datetime] = None
     contests: int
     status: str
     total_score: Optional[float] = None
@@ -98,6 +90,7 @@ class ValidatorsListResponse(BaseModel):
 
 class ChallengeItem(BaseModel):
     challenge_id: int
+    challenge_name: str
     batch_challenge_id: int
     competition_name: str
     competition_id: int
