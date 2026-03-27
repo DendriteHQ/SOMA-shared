@@ -25,6 +25,9 @@ class Validator(Base):
         nullable=True,
     )
     current_status: Mapped[str] = mapped_column(String(32), nullable=False)
+    version: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    code_changed: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    model: Mapped[str | None] = mapped_column(String(256), nullable=True)
     is_archive: Mapped[bool] = mapped_column(
         Boolean,
         nullable=False,
