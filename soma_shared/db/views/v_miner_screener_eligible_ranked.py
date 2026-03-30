@@ -101,6 +101,7 @@ def v_miner_screener_eligible_ranked() -> ViewDefinition:
         sa.select(
             stats.c.competition_id.label("competition_id"),
             stats.c.ss58.label("ss58"),
+            miner_scripts.c.miner_id.label("miner_id"),
             miner_scripts.c.script_id.label("script_id"),
             stats.c.total_screener_score.label("avg_score"),
             stats.c.first_upload_at.label("first_upload_at"),
@@ -127,6 +128,7 @@ def v_miner_screener_eligible_ranked() -> ViewDefinition:
     selectable = sa.select(
         eligible.c.competition_id,
         eligible.c.ss58,
+        eligible.c.miner_id,
         eligible.c.script_id,
         eligible.c.avg_score,
         eligible.c.first_upload_at,
