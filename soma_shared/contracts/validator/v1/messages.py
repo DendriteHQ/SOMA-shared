@@ -20,6 +20,9 @@ class HeartbeatRequest(BaseModel):
 class HeartbeatResponse(BaseModel):
     ok: bool
     server_ts: datetime
+    version: str | None = None
+    code_changed: bool | None = None
+    model: str | None = None
 
 class ValidatorRegisterRequest(BaseModel):
     validator_hotkey: str

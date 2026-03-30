@@ -4,6 +4,8 @@ import sqlalchemy as sa
 
 from soma_shared.db.models.competition import Competition
 from soma_shared.db.models.competition_config import CompetitionConfig
+from soma_shared.db.models.competition_timeframe import CompetitionTimeframe
+from soma_shared.db.models.compression_competition_config import CompressionCompetitionConfig
 
 from .base import ViewDefinition, view_table
 
@@ -11,37 +13,28 @@ from .base import ViewDefinition, view_table
 def v_active_competition() -> ViewDefinition:
     competitions = Competition.__table__
     configs = CompetitionConfig.__table__
+    timeframes = CompetitionTimeframe.__table__
+    comp_ratios = CompressionCompetitionConfig.__table__
 
-    ranked = (
+    selectable = (
         sa.select(
             competitions.c.id.label("competition_id"),
             competitions.c.competition_name.label("competition_name"),
             competitions.c.created_at.label("competition_created_at"),
-            configs.c.id.label("competition_config_id"),
-            configs.c.created_at.label("competition_config_created_at"),
-            sa.func.row_number()
-            .over(
-                order_by=(
-                    competitions.c.created_at.desc(),
-                    configs.c.created_at.desc(),
-                )
-            )
-            .label("_rn"),
+            comp_ratios.c.compression_ratios.label("compression_ratios"),
+            timeframes.c.upload_starts_at.label("upload_starts_at"),
+            timeframes.c.upload_ends_at.label("upload_ends_at"),
+            timeframes.c.eval_starts_at.label("eval_starts_at"),
+            timeframes.c.eval_ends_at.label("eval_ends_at"),
         )
         .select_from(
             competitions.join(configs, configs.c.competition_fk == competitions.c.id)
+            .join(timeframes, timeframes.c.competition_config_fk == configs.c.id)
+            .join(comp_ratios, comp_ratios.c.competition_config_fk == configs.c.id)
         )
         .where(configs.c.is_active.is_(True))
-        .subquery()
+        .order_by(timeframes.c.eval_ends_at.desc())
     )
-
-    selectable = sa.select(
-        ranked.c.competition_id,
-        ranked.c.competition_name,
-        ranked.c.competition_created_at,
-        ranked.c.competition_config_id,
-        ranked.c.competition_config_created_at,
-    ).where(ranked.c._rn == 1)
 
     table = view_table("v_active_competition")
     return ViewDefinition(name=table.name, table=table, selectable=selectable)
