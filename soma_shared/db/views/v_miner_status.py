@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import sqlalchemy as sa
 
 from soma_shared.db.models.batch_challenge import BatchChallenge
@@ -18,6 +19,7 @@ from .base import ViewDefinition, view_table, weight, weighted_score
 def v_miner_status(
     materialized: bool = False,
     unique_index_columns: tuple[str, ...] = (),
+    top_screener_fraction: float | None = None,
 ) -> ViewDefinition:
     challenge_batches = ChallengeBatch.__table__
     batch_challenges = BatchChallenge.__table__
@@ -120,8 +122,7 @@ def v_miner_status(
 
     # Eligible screener miners: fully scored (screener_scored >= screener_assigned)
     # and not banned. Ranked by weighted avg screener score per competition.
-    # screener_rank / total_eligible_screener let the caller compute is_in_top_screener
-    # as: screener_rank <= ceil(total_eligible_screener * top_fraction).
+    # screener_rank / total_eligible_screener are also used to compute status.
     eligible_screener_sq = (
         sa.select(
             screener_stats_sq.c.competition_id,
@@ -199,26 +200,133 @@ def v_miner_status(
         .subquery()
     )
 
-    # Column names mirror _miner_status() parameters for direct mapping.
+    has_script_expr = sa.literal(True)
+    competition_challenges_expr = total_comp_sq.c.competition_challenges
+    screener_challenges_expr = screener_stats_sq.c.screener_assigned
+    scored_screened_challenges_expr = screener_stats_sq.c.screener_scored
+    pending_assignments_screener_expr = (
+        sa.func.coalesce(screener_stats_sq.c.screener_assigned, 0)
+        - sa.func.coalesce(screener_stats_sq.c.screener_scored, 0)
+    )
+    scored_competition_challenges_expr = comp_stats_sq.c.scored_competition_challenges
+    pending_assignments_competition_expr = (
+        sa.func.coalesce(comp_stats_sq.c.competition_assigned, 0)
+        - sa.func.coalesce(comp_stats_sq.c.scored_competition_challenges, 0)
+    )
+
+    resolved_top_fraction = top_screener_fraction
+    if resolved_top_fraction is None:
+        raw_fraction = os.getenv("TOP_SCREENER_SCRIPTS")
+        try:
+            resolved_top_fraction = float(raw_fraction) if raw_fraction is not None else 0.2
+        except ValueError:
+            resolved_top_fraction = 0.2
+    if resolved_top_fraction > 1:
+        resolved_top_fraction = min(resolved_top_fraction, 100.0) / 100.0
+    resolved_top_fraction = min(max(resolved_top_fraction, 0.0), 1.0)
+
+    top_fraction_expr = sa.literal(resolved_top_fraction)
+    is_in_top_screener_expr = sa.and_(
+        top_fraction_expr > 0,
+        eligible_screener_sq.c.screener_rank.is_not(None),
+        eligible_screener_sq.c.total_eligible_screener.is_not(None),
+        eligible_screener_sq.c.screener_rank
+        <= sa.func.greatest(
+            sa.literal(1),
+            sa.func.ceil(eligible_screener_sq.c.total_eligible_screener * top_fraction_expr),
+        ),
+    )
+
+    # Status logic mirrors mcp_platform.app.api.routes.utils._miner_status.
+    status_expr = sa.case(
+        (base_sq.c.is_banned.is_(True), sa.literal("banned")),
+        (has_script_expr.is_(False), sa.literal("idle")),
+        (
+            sa.and_(
+                competition_challenges_expr.is_not(None),
+                scored_competition_challenges_expr.is_not(None),
+                scored_competition_challenges_expr >= competition_challenges_expr,
+            ),
+            sa.literal("scored"),
+        ),
+        (
+            sa.and_(
+                competition_challenges_expr.is_not(None),
+                scored_competition_challenges_expr.is_not(None),
+                scored_competition_challenges_expr > 0,
+                scored_competition_challenges_expr < competition_challenges_expr,
+            ),
+            sa.literal("evaluating"),
+        ),
+        (
+            sa.and_(
+                pending_assignments_screener_expr.is_not(None),
+                pending_assignments_screener_expr > 0,
+            ),
+            sa.literal("screening"),
+        ),
+        (
+            sa.and_(
+                screener_challenges_expr.is_not(None),
+                screener_challenges_expr > 0,
+                scored_screened_challenges_expr.is_not(None),
+                scored_screened_challenges_expr < screener_challenges_expr,
+            ),
+            sa.literal("screening"),
+        ),
+        (
+            sa.and_(
+                screener_challenges_expr.is_not(None),
+                screener_challenges_expr > 0,
+                scored_screened_challenges_expr.is_not(None),
+                scored_screened_challenges_expr >= screener_challenges_expr,
+                is_in_top_screener_expr,
+                sa.or_(
+                    pending_assignments_competition_expr.is_(None),
+                    pending_assignments_competition_expr == 0,
+                ),
+                sa.or_(
+                    scored_competition_challenges_expr.is_(None),
+                    scored_competition_challenges_expr == 0,
+                ),
+            ),
+            sa.literal("qualified"),
+        ),
+        (
+            sa.and_(
+                screener_challenges_expr.is_not(None),
+                screener_challenges_expr > 0,
+                scored_screened_challenges_expr.is_not(None),
+                scored_screened_challenges_expr >= screener_challenges_expr,
+                sa.not_(is_in_top_screener_expr),
+            ),
+            sa.literal("not qualified"),
+        ),
+        (
+            sa.and_(
+                pending_assignments_competition_expr.is_not(None),
+                pending_assignments_competition_expr > 0,
+            ),
+            sa.literal("evaluating"),
+        ),
+        else_=sa.literal("in queue"),
+    )
+
+    # Columns are kept for API compatibility; status is precomputed here.
     selectable = sa.select(
         base_sq.c.competition_id,
         base_sq.c.ss58,
         base_sq.c.is_banned,
-        sa.literal(True).label("has_script"),
-        total_comp_sq.c.competition_challenges,
-        screener_stats_sq.c.screener_assigned.label("screener_challenges"),
-        screener_stats_sq.c.screener_scored.label("scored_screened_challenges"),
-        (
-            sa.func.coalesce(screener_stats_sq.c.screener_assigned, 0)
-            - sa.func.coalesce(screener_stats_sq.c.screener_scored, 0)
-        ).label("pending_assignments_screener"),
-        comp_stats_sq.c.scored_competition_challenges,
-        (
-            sa.func.coalesce(comp_stats_sq.c.competition_assigned, 0)
-            - sa.func.coalesce(comp_stats_sq.c.scored_competition_challenges, 0)
-        ).label("pending_assignments_competition"),
+        has_script_expr.label("has_script"),
+        competition_challenges_expr.label("competition_challenges"),
+        screener_challenges_expr.label("screener_challenges"),
+        scored_screened_challenges_expr.label("scored_screened_challenges"),
+        pending_assignments_screener_expr.label("pending_assignments_screener"),
+        scored_competition_challenges_expr.label("scored_competition_challenges"),
+        pending_assignments_competition_expr.label("pending_assignments_competition"),
         eligible_screener_sq.c.screener_rank,
         eligible_screener_sq.c.total_eligible_screener,
+        status_expr.label("status"),
         base_sq.c.last_submit_at,
     ).select_from(
         base_sq
