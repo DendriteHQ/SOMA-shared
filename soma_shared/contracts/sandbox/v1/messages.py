@@ -44,3 +44,7 @@ class ExecuteBatchResponse(BaseModel):
         default_factory=list,
         description="Per-task error messages, one entry per challenge_text. None if the task succeeded, error string if it failed.",
     )
+    execution_times: List[Optional[float]] = Field(
+        default_factory=list,
+        description="Per-task execution times in seconds, one entry per challenge_text. None if the task failed or time is unavailable.",
+    )
