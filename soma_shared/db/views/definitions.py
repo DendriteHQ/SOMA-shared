@@ -4,6 +4,7 @@ from .base import ViewDefinition
 from .v_active_competition import v_active_competition
 from .v_batch_challenge_questions import v_batch_challenge_questions
 from .v_competition_challenges import v_competition_challenges
+from .v_miner_competition_ratio_ranked import v_miner_competition_ratio_ranked
 from .v_miner_competition_stats import v_miner_competition_stats
 from .v_miner_screener_stats import v_miner_screener_stats
 from .v_miner_status import v_miner_status
@@ -14,6 +15,7 @@ VIEW_DEFINITIONS: tuple[ViewDefinition, ...] = (
     v_active_competition(),
     v_batch_challenge_questions(),
     v_competition_challenges(),
+    v_miner_competition_ratio_ranked(),
     v_miner_screener_stats(),
     v_miner_competition_stats(),
     v_miner_status(),
@@ -25,6 +27,10 @@ VIEW_DEFINITIONS: tuple[ViewDefinition, ...] = (
 # Each entry mirrors a regular view but with materialized=True and a unique
 # index definition (required for REFRESH MATERIALIZED VIEW CONCURRENTLY).
 MV_DEFINITIONS: tuple[ViewDefinition, ...] = (
+    v_batch_challenge_questions(
+        materialized=True,
+        unique_index_columns=("batch_challenge_id", "question_id"),
+    ),
     v_competition_challenges(materialized=True, unique_index_columns=("competition_id", "challenge_id")),
     v_miner_screener_stats(materialized=True, unique_index_columns=("competition_id", "ss58")),
     v_miner_competition_stats(materialized=True, unique_index_columns=("competition_id", "ss58")),
