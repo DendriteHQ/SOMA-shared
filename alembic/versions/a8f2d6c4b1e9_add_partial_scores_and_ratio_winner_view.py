@@ -41,10 +41,15 @@ def upgrade() -> None:
         sql = _compile(view_def.selectable)
         op.execute(sa.text(f"CREATE OR REPLACE VIEW {view_def.name} AS {sql}"))
 
-    # Recreate materialized views and required unique indexes.
+    # Recreate materialized views without initial data for faster migration.
+    # They are populated by the app refresh task after deploy.
     for mv in MV_DEFINITIONS:
         sql = _compile(mv.selectable)
-        op.execute(sa.text(f"CREATE MATERIALIZED VIEW IF NOT EXISTS {mv.name} AS {sql}"))
+        op.execute(
+            sa.text(
+                f"CREATE MATERIALIZED VIEW IF NOT EXISTS {mv.name} AS {sql} WITH NO DATA"
+            )
+        )
         if mv.unique_index_columns:
             idx = f"{mv.name}_uidx"
             cols = ", ".join(mv.unique_index_columns)
