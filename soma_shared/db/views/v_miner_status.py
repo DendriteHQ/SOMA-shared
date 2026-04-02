@@ -42,6 +42,23 @@ def v_miner_status(
         .subquery()
     )
 
+    # Total distinct screener challenge IDs per competition.
+    # Represents how many screener challenges each miner must be scored on.
+    total_screener_sq = (
+        sa.select(
+            screeners.c.competition_fk.label("competition_id"),
+            sa.func.count(
+                sa.distinct(screening.c.challenge_fk)
+            ).label("screener_challenges"),
+        )
+        .select_from(
+            screeners.join(screening, screening.c.screener_fk == screeners.c.id)
+        )
+        .where(screeners.c.is_active.is_(True))
+        .group_by(screeners.c.competition_fk)
+        .subquery()
+    )
+
     # Total distinct non-screener (challenge, compression_ratio) pairs per competition.
     # Represents how many task-ratio combos a fully-evaluated miner should have scored.
     total_comp_sq = (
@@ -202,7 +219,7 @@ def v_miner_status(
 
     has_script_expr = sa.literal(True)
     competition_challenges_expr = total_comp_sq.c.competition_challenges
-    screener_challenges_expr = screener_stats_sq.c.screener_assigned
+    screener_challenges_expr = total_screener_sq.c.screener_challenges
     scored_screened_challenges_expr = screener_stats_sq.c.screener_scored
     pending_assignments_screener_expr = (
         sa.func.coalesce(screener_stats_sq.c.screener_assigned, 0)
@@ -333,6 +350,10 @@ def v_miner_status(
         .outerjoin(
             total_comp_sq,
             total_comp_sq.c.competition_id == base_sq.c.competition_id,
+        )
+        .outerjoin(
+            total_screener_sq,
+            total_screener_sq.c.competition_id == base_sq.c.competition_id,
         )
         .outerjoin(
             screener_stats_sq,
