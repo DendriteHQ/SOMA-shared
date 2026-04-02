@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from .base import ViewDefinition
 from .v_active_competition import v_active_competition
-from .v_batch_challenge_questions import v_batch_challenge_questions
 from .v_competition_challenges import v_competition_challenges
+from .v_miner_competition_ratio_ranked import v_miner_competition_ratio_ranked
 from .v_miner_competition_stats import v_miner_competition_stats
 from .v_miner_screener_stats import v_miner_screener_stats
 from .v_miner_status import v_miner_status
@@ -12,8 +12,8 @@ from .v_miner_screener_eligible_ranked import v_miner_screener_eligible_ranked
 # Regular (live) views — used by backend for real-time data.
 VIEW_DEFINITIONS: tuple[ViewDefinition, ...] = (
     v_active_competition(),
-    v_batch_challenge_questions(),
     v_competition_challenges(),
+    v_miner_competition_ratio_ranked(),
     v_miner_screener_stats(),
     v_miner_competition_stats(),
     v_miner_status(),

@@ -19,7 +19,10 @@ from soma_shared.db.models.script import Script
 from .base import ViewDefinition, view_table
 
 
-def v_batch_challenge_questions() -> ViewDefinition:
+def v_batch_challenge_questions(
+    materialized: bool = False,
+    unique_index_columns: tuple[str, ...] = (),
+) -> ViewDefinition:
     batch_challenges = BatchChallenge.__table__
     challenge_batches = ChallengeBatch.__table__
     scripts = Script.__table__
@@ -105,5 +108,12 @@ def v_batch_challenge_questions() -> ViewDefinition:
         .order_by(batch_challenges.c.id, questions.c.id)
     )
 
-    table = view_table("v_batch_challenge_questions")
-    return ViewDefinition(name=table.name, table=table, selectable=selectable)
+    name = "mv_batch_challenge_questions" if materialized else "v_batch_challenge_questions"
+    table = view_table(name)
+    return ViewDefinition(
+        name=table.name,
+        table=table,
+        selectable=selectable,
+        materialized=materialized,
+        unique_index_columns=unique_index_columns,
+    )
