@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from soma_shared.contracts.common.utils import require_tz
 
 
@@ -195,8 +196,21 @@ class CreateScreeningChallengesResponse(BaseModel):
 
 class CreateTopMinerRequest(BaseModel):
     ss58: str
+    competition_id: int | None = None
+    winner_type: Literal["overall", "compression_ratio"] = "overall"
+    compression_ratio: float | None = None
     starts_at: datetime
     ends_at: datetime
+
+    @model_validator(mode="after")
+    def _validate_category_shape(self) -> "CreateTopMinerRequest":
+        if self.winner_type == "overall" and self.compression_ratio is not None:
+            raise ValueError("compression_ratio must be null for overall winner_type")
+        if self.winner_type == "compression_ratio" and self.compression_ratio is None:
+            raise ValueError(
+                "compression_ratio is required for compression_ratio winner_type"
+            )
+        return self
 
     @field_validator("starts_at", "ends_at", mode="after")
     @classmethod
@@ -216,6 +230,9 @@ class GetTopMinersRequest(BaseModel):
 class TopMinerInfo(BaseModel):
     id: int
     ss58: str
+    competition_id: int | None
+    winner_type: Literal["overall", "compression_ratio"]
+    compression_ratio: float | None
     starts_at: datetime
     ends_at: datetime
     created_at: datetime
@@ -237,8 +254,23 @@ class DeleteTopMinerResponse(BaseModel):
 class UpdateTopMinerRequest(BaseModel):
     top_miner_id: int
     ss58: str | None = None
+    competition_id: int | None = None
+    winner_type: Literal["overall", "compression_ratio"] | None = None
+    compression_ratio: float | None = None
     starts_at: datetime | None = None
     ends_at: datetime | None = None
+
+    @model_validator(mode="after")
+    def _validate_category_shape(self) -> "UpdateTopMinerRequest":
+        if self.winner_type is None:
+            return self
+        if self.winner_type == "overall" and self.compression_ratio is not None:
+            raise ValueError("compression_ratio must be null for overall winner_type")
+        if self.winner_type == "compression_ratio" and self.compression_ratio is None:
+            raise ValueError(
+                "compression_ratio is required for compression_ratio winner_type"
+            )
+        return self
 
     @field_validator("starts_at", "ends_at", mode="after")
     @classmethod

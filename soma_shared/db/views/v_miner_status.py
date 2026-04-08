@@ -7,6 +7,8 @@ from soma_shared.db.models.batch_challenge import BatchChallenge
 from soma_shared.db.models.batch_challenge_score import BatchChallengeScore
 from soma_shared.db.models.challenge_batch import ChallengeBatch
 from soma_shared.db.models.competition_challenge import CompetitionChallenge
+from soma_shared.db.models.competition_config import CompetitionConfig
+from soma_shared.db.models.compression_competition_config import CompressionCompetitionConfig
 from soma_shared.db.models.miner import Miner
 from soma_shared.db.models.miner_upload import MinerUpload
 from soma_shared.db.models.screener import Screener
@@ -42,14 +44,39 @@ def v_miner_status(
         .subquery()
     )
 
-    # Total distinct screener challenge IDs per competition.
-    # Represents how many screener challenges each miner must be scored on.
-    total_screener_sq = (
+    # Shared: one row per competition with the configured compression ratio count.
+    # Used by both total_screener_sq and total_comp_sq so scored/required counts
+    # are always in the same units (challenge × ratio pairs).
+    comp_configs = CompetitionConfig.__table__
+    compression_configs = CompressionCompetitionConfig.__table__
+
+    _comp_ratio_sq = (
+        sa.select(
+            comp_configs.c.competition_fk.label("competition_id"),
+            sa.func.coalesce(
+                sa.func.json_array_length(compression_configs.c.compression_ratios),
+                sa.literal(1),
+            ).label("ratio_count"),
+        )
+        .select_from(
+            comp_configs.outerjoin(
+                compression_configs,
+                compression_configs.c.competition_config_fk == comp_configs.c.id,
+            )
+        )
+        .where(comp_configs.c.is_active.is_(True))
+        .subquery()
+    )
+
+    # Total screener (challenge × ratio) pairs per competition.
+    # scored_screened_challenges counts batch_challenge IDs (one per challenge×ratio),
+    # so screener_challenges must use the same unit for the backlog check to work.
+    _total_screener_challenges_sq = (
         sa.select(
             screeners.c.competition_fk.label("competition_id"),
             sa.func.count(
                 sa.distinct(screening.c.challenge_fk)
-            ).label("screener_challenges"),
+            ).label("screener_challenge_count"),
         )
         .select_from(
             screeners.join(screening, screening.c.screener_fk == screeners.c.id)
@@ -59,27 +86,34 @@ def v_miner_status(
         .subquery()
     )
 
-    # Total distinct non-screener (challenge, compression_ratio) pairs per competition.
-    # Represents how many task-ratio combos a fully-evaluated miner should have scored.
-    total_comp_sq = (
+    total_screener_sq = (
         sa.select(
-            comp_challenges.c.competition_fk.label("competition_id"),
-            sa.func.count(
-                sa.distinct(
-                    sa.tuple_(
-                        batch_challenges.c.challenge_fk,
-                        batch_challenges.c.compression_ratio,
-                    )
-                )
-            ).label("competition_challenges"),
+            _total_screener_challenges_sq.c.competition_id,
+            (
+                _total_screener_challenges_sq.c.screener_challenge_count
+                * _comp_ratio_sq.c.ratio_count
+            ).label("screener_challenges"),
         )
         .select_from(
-            batch_challenges
-            .join(comp_challenges, comp_challenges.c.challenge_fk == batch_challenges.c.challenge_fk)
-            .outerjoin(
+            _total_screener_challenges_sq.join(
+                _comp_ratio_sq,
+                _comp_ratio_sq.c.competition_id == _total_screener_challenges_sq.c.competition_id,
+            )
+        )
+        .subquery()
+    )
+
+    # One row per competition: count of active non-screener competition challenges.
+    _comp_challenge_count_sq = (
+        sa.select(
+            comp_challenges.c.competition_fk.label("competition_id"),
+            sa.func.count(sa.distinct(comp_challenges.c.challenge_fk)).label("nonscreener_count"),
+        )
+        .select_from(
+            comp_challenges.outerjoin(
                 screener_ids_sq,
                 sa.and_(
-                    screener_ids_sq.c.challenge_id == batch_challenges.c.challenge_fk,
+                    screener_ids_sq.c.challenge_id == comp_challenges.c.challenge_fk,
                     screener_ids_sq.c.competition_id == comp_challenges.c.competition_fk,
                 ),
             )
@@ -87,6 +121,23 @@ def v_miner_status(
         .where(comp_challenges.c.is_active.is_(True))
         .where(screener_ids_sq.c.challenge_id.is_(None))
         .group_by(comp_challenges.c.competition_fk)
+        .subquery()
+    )
+
+    total_comp_sq = (
+        sa.select(
+            _comp_challenge_count_sq.c.competition_id,
+            (
+                _comp_challenge_count_sq.c.nonscreener_count
+                * _comp_ratio_sq.c.ratio_count
+            ).label("competition_challenges"),
+        )
+        .select_from(
+            _comp_challenge_count_sq.join(
+                _comp_ratio_sq,
+                _comp_ratio_sq.c.competition_id == _comp_challenge_count_sq.c.competition_id,
+            )
+        )
         .subquery()
     )
 
