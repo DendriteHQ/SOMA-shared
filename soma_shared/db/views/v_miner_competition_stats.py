@@ -11,6 +11,7 @@ from soma_shared.db.models.miner_upload import MinerUpload
 from soma_shared.db.models.script import Script
 
 from .base import ViewDefinition, view_table, weighted_avg
+from .v_miner_status import v_miner_status
 
 
 def competition_ratio_stats_subquery() -> sa.Subquery:
@@ -84,6 +85,14 @@ def v_miner_competition_stats(
         .subquery("partial_scores")
     )
 
+    _status = v_miner_status().selectable.subquery("miner_status")
+    eligible_miners = (
+        sa.select(_status.c.competition_id, _status.c.ss58)
+        .where(_status.c.competition_challenges.is_not(None))
+        .where(_status.c.scored_competition_challenges == _status.c.competition_challenges)
+        .subquery("eligible_miners")
+    )
+
     base = (
         sa.select(
             comp_challenges.c.competition_fk.label("competition_id"),
@@ -102,6 +111,13 @@ def v_miner_competition_stats(
             .join(batch_challenges, batch_challenges.c.challenge_batch_fk == challenge_batches.c.id)
             .outerjoin(scores, scores.c.batch_challenge_fk == batch_challenges.c.id)
             .join(comp_challenges, comp_challenges.c.challenge_fk == batch_challenges.c.challenge_fk)
+            .join(
+                eligible_miners,
+                sa.and_(
+                    eligible_miners.c.competition_id == comp_challenges.c.competition_fk,
+                    eligible_miners.c.ss58 == miners.c.ss58,
+                ),
+            )
         )
         .where(comp_challenges.c.is_active.is_(True))
         .where(miner_uploads.c.competition_fk == comp_challenges.c.competition_fk)
