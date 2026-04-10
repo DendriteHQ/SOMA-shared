@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from sqlalchemy import BigInteger, DateTime, ForeignKey, Text, UniqueConstraint
+from sqlalchemy import BigInteger, DateTime, ForeignKey, Numeric, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .base import Base
@@ -35,6 +35,11 @@ class BatchCompressedText(Base):
         Text,
         nullable=False,
         unique=True,
+    )
+    execution_time_seconds: Mapped[float | None] = mapped_column(
+        Numeric(10, 4),
+        nullable=True,
+        comment="Time in seconds taken to compress this text in the sandbox",
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

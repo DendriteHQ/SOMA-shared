@@ -6,6 +6,7 @@ from soma_shared.db.models.competition_config import CompetitionConfig
 from soma_shared.db.models.compression_competition_config import (
     CompressionCompetitionConfig,
 )
+from soma_shared.db.models.miner import Miner
 from soma_shared.db.models.miner_upload import MinerUpload
 from soma_shared.db.models.screening_challenge import ScreeningChallenge
 from soma_shared.db.models.screener import Screener
@@ -23,6 +24,7 @@ def v_miner_screener_eligible_ranked() -> ViewDefinition:
     screening = ScreeningChallenge.__table__
     uploads = MinerUpload.__table__
     scripts = Script.__table__
+    miners = Miner.__table__
 
     screener_counts = (
         sa.select(
@@ -120,8 +122,13 @@ def v_miner_screener_eligible_ranked() -> ViewDefinition:
                 ),
             )
         )
+        .join(
+                miners,
+                miners.c.ss58 == stats.c.ss58,
+            )
         .where(required_pairs.c.screener_required > 0)
         .where(stats.c.screener_scored >= required_pairs.c.screener_required)
+        .where(miners.c.miner_banned_status.is_(False))
         .subquery()
     )
 

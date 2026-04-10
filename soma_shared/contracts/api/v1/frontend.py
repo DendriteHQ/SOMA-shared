@@ -31,9 +31,15 @@ class MinerCompetitionItem(BaseModel):
     competition_name: str
 
 
+class PartialScore(BaseModel):
+    compression_ratio: float
+    score: float
+
+
 class MinerListItem(BaseModel):
     hotkey: str
     score: Optional[float] = None
+    partial_scores: Optional[list[PartialScore]] = None
     last_submit: Optional[datetime] = None
     status: str
     screener_score: Optional[float] = None
@@ -49,6 +55,7 @@ class ContestSummary(BaseModel):
     name: str
     date: datetime
     score: Optional[float] = None
+    partial_scores: Optional[list[PartialScore]] = None
     rank: Optional[int] = None
 
 
@@ -63,6 +70,7 @@ class MinerDetail(BaseModel):
     contests: int
     status: str
     total_score: Optional[float] = None
+    partial_scores: Optional[list[PartialScore]] = None
 
 
 class MinerDetailResponse(BaseModel):

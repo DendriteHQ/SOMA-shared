@@ -32,12 +32,19 @@ async def log_validator_message(
     request_id: str | None = None,
     payload: Any,
     status_code: int | None = None,
+    response_payload: Any = None,
 ) -> None:
     payload_value: Any
     if isinstance(payload, (dict, list)):
         payload_value = payload
     else:
         payload_value = {"raw": str(payload)}
+    response_payload_value: Any = None
+    if response_payload is not None:
+        if isinstance(response_payload, (dict, list)):
+            response_payload_value = response_payload
+        else:
+            response_payload_value = {"raw": str(response_payload)}
     created_at = datetime.now(timezone.utc)
     external_request_id = request_id or uuid.uuid4().hex
     method_value = (method or "").strip() or "UNKNOWN"
@@ -121,12 +128,15 @@ async def log_validator_message(
                     created_at=created_at,
                     payload=payload_value,
                     status_code=status_code,
+                    response_payload=response_payload_value,
                 )
                 apply_db_metrics_snapshot_to_request(request_entry, metrics_snapshot)
                 session.add(request_entry)
             else:
                 if status_code is not None:
                     request_entry.status_code = status_code
+                if response_payload_value is not None:
+                    request_entry.response_payload = response_payload_value
                 apply_db_metrics_snapshot_to_request(request_entry, metrics_snapshot)
         await session.commit()
     except SQLAlchemyError:

@@ -26,6 +26,7 @@ class Request(Base):
         nullable=False,
     )
     payload: Mapped[dict | list] = mapped_column(JSON, nullable=False)
+    response_payload: Mapped[dict | list | None] = mapped_column(JSON, nullable=True)
     status_code: Mapped[int | None] = mapped_column(Integer, nullable=True)
     db_query_count: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     db_error_count: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
