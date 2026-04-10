@@ -49,6 +49,12 @@ class TopMiner(Base):
         nullable=True,
         index=True,
     )
+    weight: Mapped[float] = mapped_column(
+        Float,
+        nullable=False,
+        default=0.0,
+        server_default="0.0",
+    )
     starts_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     ends_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     miner_fk: Mapped[int | None] = mapped_column(
