@@ -27,6 +27,6 @@ VIEW_DEFINITIONS: tuple[ViewDefinition, ...] = (
 MV_DEFINITIONS: tuple[ViewDefinition, ...] = (
     v_competition_challenges(materialized=True, unique_index_columns=("competition_id", "challenge_id")),
     v_miner_screener_stats(materialized=True, unique_index_columns=("competition_id", "ss58")),
-    v_miner_competition_stats(materialized=True, unique_index_columns=("competition_id", "ss58")),
     v_miner_status(materialized=True, unique_index_columns=("competition_id", "ss58")),
+    v_miner_competition_stats(materialized=True, unique_index_columns=("competition_id", "ss58")),
 )
