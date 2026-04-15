@@ -35,6 +35,20 @@ def upgrade() -> None:
         server_default=None,
     )
 
+    # Set is_partial_winner=true for Context-Compression-4 and Context-Compression-5
+    op.execute(
+        sa.text(
+            """
+            UPDATE compression_competition_config ccc
+            SET is_partial_winner = true
+            FROM competition_configs cc
+            JOIN competitions c ON c.id = cc.competition_fk
+            WHERE ccc.competition_config_fk = cc.id
+              AND c.competition_name IN ('Context-Compression-4', 'Context-Compression-5')
+            """
+        )
+    )
+
 
 def downgrade() -> None:
     op.drop_column("compression_competition_config", "is_partial_winner")
