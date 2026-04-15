@@ -11,7 +11,6 @@ from soma_shared.db.models.miner_upload import MinerUpload
 from soma_shared.db.models.script import Script
 
 from .base import ViewDefinition, view_table, weighted_avg
-from .v_miner_status import v_miner_status
 
 
 def competition_ratio_stats_subquery() -> sa.Subquery:
@@ -85,7 +84,14 @@ def v_miner_competition_stats(
         .subquery("partial_scores")
     )
 
-    _status = v_miner_status().selectable.subquery("miner_status")
+    _status_table_name = "mv_miner_status" if materialized else "v_miner_status"
+    _status = sa.table(
+        _status_table_name,
+        sa.column("competition_id"),
+        sa.column("ss58"),
+        sa.column("competition_challenges"),
+        sa.column("scored_competition_challenges"),
+    )
     eligible_miners = (
         sa.select(_status.c.competition_id, _status.c.ss58)
         .where(_status.c.competition_challenges.is_not(None))
