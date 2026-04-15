@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import BigInteger, ForeignKey, JSON
+from sqlalchemy import BigInteger, Boolean, ForeignKey, JSON
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .base import Base
@@ -20,3 +20,4 @@ class CompressionCompetitionConfig(Base):
         JSON,
         nullable=False,
     )
+    is_partial_winner: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
