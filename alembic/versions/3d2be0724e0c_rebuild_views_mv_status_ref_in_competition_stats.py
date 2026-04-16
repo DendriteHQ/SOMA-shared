@@ -6,7 +6,7 @@ MV refresh order in MV_DEFINITIONS was also fixed so mv_miner_status is
 always refreshed before mv_miner_competition_stats.
 
 Revision ID: 3d2be0724e0c
-Revises: c1a2b3d4e5f6
+Revises: a1c2d3e4f5b6
 Create Date: 2026-04-15
 
 """
@@ -19,7 +19,7 @@ from sqlalchemy.dialects import postgresql
 from soma_shared.db.views.definitions import MV_DEFINITIONS, VIEW_DEFINITIONS
 
 revision = "3d2be0724e0c"
-down_revision = "c1a2b3d4e5f6"
+down_revision = "a1c2d3e4f5b6"
 branch_labels = None
 depends_on = None
 

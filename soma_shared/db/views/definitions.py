@@ -15,8 +15,8 @@ VIEW_DEFINITIONS: tuple[ViewDefinition, ...] = (
     v_competition_challenges(),
     v_miner_competition_ratio_ranked(),
     v_miner_screener_stats(),
-    v_miner_competition_stats(),
     v_miner_status(),
+    v_miner_competition_stats(),
     v_miner_screener_eligible_ranked()
 )
 

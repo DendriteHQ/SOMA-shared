@@ -1,7 +1,7 @@
 """Add somarizzer_api_keys table.
 
 Revision ID: a1c2d3e4f5b6
-Revises: b1c2d3e4f5a6
+Revises: c3d4e5f6a7b8
 Create Date: 2026-04-13
 
 """
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 
 
 revision = "a1c2d3e4f5b6"
-down_revision = "b1c2d3e4f5a6"
+down_revision = "c3d4e5f6a7b8"
 branch_labels = None
 depends_on = None
 
