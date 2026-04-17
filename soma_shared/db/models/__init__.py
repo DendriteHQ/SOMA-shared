@@ -29,6 +29,7 @@ from .validator_heartbeat import ValidatorHeartbeat
 from .validator_registration import ValidatorRegistration
 from .top_miner import TopMiner
 from .somarizzer_api_key import SomarizzerApiKey
+from .soma_api_key import SomaApiKey
 __all__ = [
     "Base",
     "Admin",
@@ -61,4 +62,5 @@ __all__ = [
     "ValidatorHeartbeat",
     "ValidatorRegistration",
     "SomarizzerApiKey",
+    "SomaApiKey",
 ]
