@@ -17,31 +17,25 @@ def v_competition_challenges(
     screeners = Screener.__table__
     screening = ScreeningChallenge.__table__
 
-    # Left-join to active screener for this competition to determine is_screener flag.
-    # A challenge is a screener challenge when it appears in screening_challenges
-    # belonging to an active screener for the same competition.
+    is_screener_sq = sa.exists(
+        sa.select(sa.literal(1))
+        .select_from(
+            screening.join(screeners, screeners.c.id == screening.c.screener_fk)
+        )
+        .where(screening.c.challenge_fk == comp_challenges.c.challenge_fk)
+        .where(screeners.c.is_active.is_(True))
+        .where(screeners.c.competition_fk == comp_challenges.c.competition_fk)
+    )
+
+    # EXISTS avoids row multiplication from screening_challenges and screeners.
     selectable = (
         sa.select(
             comp_challenges.c.competition_fk.label("competition_id"),
             comp_challenges.c.challenge_fk.label("challenge_id"),
             comp_challenges.c.is_active.label("is_active"),
-            screeners.c.id.is_not(None).label("is_screener"),
+            is_screener_sq.label("is_screener"),
         )
-        .select_from(
-            comp_challenges
-            .outerjoin(
-                screening,
-                screening.c.challenge_fk == comp_challenges.c.challenge_fk,
-            )
-            .outerjoin(
-                screeners,
-                sa.and_(
-                    screeners.c.id == screening.c.screener_fk,
-                    screeners.c.is_active.is_(True),
-                    screeners.c.competition_fk == comp_challenges.c.competition_fk,
-                ),
-            )
-        )
+        .select_from(comp_challenges)
     )
 
     name = "mv_competition_challenges" if materialized else "v_competition_challenges"

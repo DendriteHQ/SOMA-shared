@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import BigInteger, ForeignKey, Numeric, UniqueConstraint
+from sqlalchemy import BigInteger, ForeignKey, Index, Numeric, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .base import Base
@@ -14,6 +14,11 @@ class BatchChallenge(Base):
             "challenge_fk",
             "compression_ratio",
             name="uq_batch_challenges_batch_challenge",
+        ),
+        Index(
+            "ix_batch_challenges_challenge_fk_challenge_batch_fk",
+            "challenge_fk",
+            "challenge_batch_fk",
         ),
     )
 
