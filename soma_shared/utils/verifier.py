@@ -232,41 +232,50 @@ async def verify_hotkey_in_metagraph(
 def check_validator_stake(
     validator_ss58: str,
     metagraph_snapshot: dict[str, Any] | None,
-    min_stake: float,
+    min_total_weight: float = 30000.0,
+    min_alpha_weight: float = 5000.0,
+    min_stake: float | None = None,
 ) -> tuple[bool, float | None, str]:
-    """Check if validator has sufficient stake on the subnet."""
+    """Check if validator has sufficient total and alpha stake weights on a subnet."""
+    if min_stake is not None:
+        min_total_weight = float(min_stake)
+
     if metagraph_snapshot is None:
         logger.warning(
             "check_validator_stake_snapshot_unavailable",
             extra={
                 "validator_ss58": validator_ss58,
-                "min_stake": min_stake,
+                "min_total_weight": min_total_weight,
+                "min_alpha_weight": min_alpha_weight,
             },
         )
         return False, None, "Metagraph snapshot unavailable"
     
     hotkeys = metagraph_snapshot.get("hotkeys", [])
-    stakes = metagraph_snapshot.get("stake", [])
+    total_weights = metagraph_snapshot.get("stake", [])
+    alpha_weights = metagraph_snapshot.get("alpha_stake", [])
     
-    if not hotkeys or not stakes:
+    if not hotkeys or not total_weights:
         logger.warning(
             "check_validator_stake_data_incomplete",
             extra={
                 "validator_ss58": validator_ss58,
                 "hotkeys_count": len(hotkeys),
-                "stakes_count": len(stakes),
-                "min_stake": min_stake,
+                "total_weights_count": len(total_weights),
+                "alpha_weights_count": len(alpha_weights),
+                "min_total_weight": min_total_weight,
+                "min_alpha_weight": min_alpha_weight,
             },
         )
         return False, None, "Metagraph data incomplete"
     
-    if len(hotkeys) != len(stakes):
+    if len(hotkeys) != len(total_weights):
         logger.error(
             "check_validator_stake_length_mismatch",
             extra={
                 "validator_ss58": validator_ss58,
                 "hotkeys_count": len(hotkeys),
-                "stakes_count": len(stakes),
+                "total_weights_count": len(total_weights),
             },
         )
         return False, None, "Metagraph data inconsistent"
@@ -278,50 +287,139 @@ def check_validator_stake(
             "check_validator_stake_not_registered",
             extra={
                 "validator_ss58": validator_ss58,
-                "min_stake": min_stake,
+                "min_total_weight": min_total_weight,
+                "min_alpha_weight": min_alpha_weight,
             },
         )
         return False, None, "Validator hotkey not registered on subnet"
     
     try:
-        current_stake = float(stakes[uid])
+        current_total_weight = float(total_weights[uid])
     except (IndexError, TypeError, ValueError) as e:
         logger.error(
-            "check_validator_stake_retrieval_failed",
+            "check_validator_total_weight_retrieval_failed",
             extra={
                 "validator_ss58": validator_ss58,
                 "uid": uid,
                 "error": str(e),
             },
         )
-        return False, None, "Failed to retrieve stake"
-    
-    if current_stake < min_stake:
+        return False, None, "Failed to retrieve total stake weight"
+
+    current_alpha_weight: float | None = None
+    if alpha_weights:
+        if len(hotkeys) != len(alpha_weights):
+            logger.error(
+                "check_validator_alpha_weight_length_mismatch",
+                extra={
+                    "validator_ss58": validator_ss58,
+                    "hotkeys_count": len(hotkeys),
+                    "alpha_weights_count": len(alpha_weights),
+                },
+            )
+            return False, current_total_weight, "Metagraph alpha stake data inconsistent"
+        try:
+            current_alpha_weight = float(alpha_weights[uid])
+        except (IndexError, TypeError, ValueError) as e:
+            logger.error(
+                "check_validator_alpha_weight_retrieval_failed",
+                extra={
+                    "validator_ss58": validator_ss58,
+                    "uid": uid,
+                    "error": str(e),
+                },
+            )
+            return False, current_total_weight, "Failed to retrieve alpha stake weight"
+    elif min_alpha_weight > 0:
         logger.warning(
-            "check_validator_stake_insufficient",
+            "check_validator_alpha_weight_missing",
             extra={
                 "validator_ss58": validator_ss58,
-                "current_stake": current_stake,
-                "min_stake": min_stake,
+                "uid": uid,
+                "min_alpha_weight": min_alpha_weight,
+            },
+        )
+        return (
+            False,
+            current_total_weight,
+            "Metagraph alpha stake data unavailable",
+        )
+
+    alpha_for_compare = (
+        current_alpha_weight
+        if current_alpha_weight is not None
+        else 0.0
+    )
+    alpha_display = (
+        f"{current_alpha_weight:.2f} α"
+        if current_alpha_weight is not None
+        else "unavailable"
+    )
+
+    if current_total_weight < min_total_weight:
+        logger.warning(
+            "check_validator_total_weight_insufficient",
+            extra={
+                "validator_ss58": validator_ss58,
+                "current_total_weight": current_total_weight,
+                "current_alpha_weight": current_alpha_weight,
+                "min_total_weight": min_total_weight,
+                "min_alpha_weight": min_alpha_weight,
                 "uid": uid,
             },
         )
         return (
             False,
-            current_stake,
-            f"Insufficient stake: {current_stake:.2f} α (minimum: {min_stake:.2f} α)",
+            current_total_weight,
+            (
+                "Insufficient total stake weight: "
+                f"{current_total_weight:.2f} α (minimum total: {min_total_weight:.2f} α; "
+                f"alpha: {alpha_display}, minimum alpha: {min_alpha_weight:.2f} α)"
+            ),
+        )
+
+    if alpha_for_compare < min_alpha_weight:
+        logger.warning(
+            "check_validator_alpha_weight_insufficient",
+            extra={
+                "validator_ss58": validator_ss58,
+                "current_total_weight": current_total_weight,
+                "current_alpha_weight": current_alpha_weight,
+                "min_total_weight": min_total_weight,
+                "min_alpha_weight": min_alpha_weight,
+                "uid": uid,
+            },
+        )
+        return (
+            False,
+            current_total_weight,
+            (
+                "Insufficient alpha stake weight: "
+                f"{alpha_for_compare:.2f} α (minimum alpha: {min_alpha_weight:.2f} α; "
+                f"total: {current_total_weight:.2f} α, minimum total: {min_total_weight:.2f} α)"
+            ),
         )
     
     logger.debug(
         "check_validator_stake_passed",
         extra={
             "validator_ss58": validator_ss58,
-            "current_stake": current_stake,
-            "min_stake": min_stake,
+            "current_total_weight": current_total_weight,
+            "current_alpha_weight": current_alpha_weight,
+            "min_total_weight": min_total_weight,
+            "min_alpha_weight": min_alpha_weight,
             "uid": uid,
         },
     )
-    return True, current_stake, f"Sufficient stake: {current_stake:.2f} α"
+    return (
+        True,
+        current_total_weight,
+        (
+            "Sufficient stake weights: "
+            f"total={current_total_weight:.2f} α (minimum total: {min_total_weight:.2f} α), "
+            f"alpha={alpha_display} (minimum alpha: {min_alpha_weight:.2f} α)"
+        ),
+    )
 
 
 def is_public_ip(ip_str: str) -> bool:
@@ -334,10 +432,14 @@ def is_public_ip(ip_str: str) -> bool:
 
 
 def verify_validator_stake_dep(
-    min_validator_stake: float = 20000.0,
+    min_total_weight: float = 30000.0,
+    min_alpha_weight: float = 5000.0,
     debug: bool = False,
+    min_validator_stake: float | None = None,
 ):
     """Factory returning FastAPI dependency that verifies validator stake."""
+    if min_validator_stake is not None:
+        min_total_weight = float(min_validator_stake)
 
     async def _verify_validator_stake(
         request: Request,
@@ -356,10 +458,11 @@ def verify_validator_stake_dep(
             else None
         )
 
-        is_valid, current_stake, reason = check_validator_stake(
+        is_valid, current_total_weight, reason = check_validator_stake(
             validator_ss58=validator_ss58,
             metagraph_snapshot=snapshot,
-            min_stake=min_validator_stake,
+            min_total_weight=min_total_weight,
+            min_alpha_weight=min_alpha_weight,
         )
 
         if not is_valid:
@@ -367,8 +470,9 @@ def verify_validator_stake_dep(
                 "verify_validator_stake_failed",
                 extra={
                     "validator_ss58": validator_ss58,
-                    "current_stake": current_stake,
-                    "min_stake": min_validator_stake,
+                    "current_total_weight": current_total_weight,
+                    "min_total_weight": min_total_weight,
+                    "min_alpha_weight": min_alpha_weight,
                     "reason": reason,
                     "endpoint": request.url.path,
                 },
