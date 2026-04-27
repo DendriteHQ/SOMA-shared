@@ -41,7 +41,19 @@ def v_miner_status(
         )
         .select_from(screeners.join(screening, screening.c.screener_fk == screeners.c.id))
         .where(screeners.c.is_active.is_(True))
+        .distinct()
         .subquery()
+    )
+
+    uploads_sq = (
+        sa.select(
+            miner_uploads.c.script_fk.label("script_fk"),
+            miner_uploads.c.competition_fk.label("competition_id"),
+            sa.func.max(miner_uploads.c.created_at).label("last_submit_at"),
+        )
+        .where(miner_uploads.c.competition_fk.is_not(None))
+        .group_by(miner_uploads.c.script_fk, miner_uploads.c.competition_fk)
+        .subquery("script_competition_uploads")
     )
 
     # Shared: one row per competition with the configured compression ratio count.
@@ -154,7 +166,7 @@ def v_miner_status(
 
     screener_stats_sq = (
         sa.select(
-            miner_uploads.c.competition_fk.label("competition_id"),
+            uploads_sq.c.competition_id.label("competition_id"),
             challenge_batches.c.miner_fk.label("miner_id"),
             miners.c.miner_banned_status.label("is_banned"),
             sa.func.count(sa.distinct(batch_challenges.c.id)).label("screener_assigned"),
@@ -167,9 +179,9 @@ def v_miner_status(
             challenge_batches
             .join(miners, miners.c.id == challenge_batches.c.miner_fk)
             .join(scripts, scripts.c.id == challenge_batches.c.script_fk)
-            .join(miner_uploads, miner_uploads.c.script_fk == scripts.c.id)
+            .join(uploads_sq, uploads_sq.c.script_fk == scripts.c.id)
             .join(batch_challenges, batch_challenges.c.challenge_batch_fk == challenge_batches.c.id)
-            .join(screeners, screeners.c.competition_fk == miner_uploads.c.competition_fk)
+            .join(screeners, screeners.c.competition_fk == uploads_sq.c.competition_id)
             .join(
                 screening,
                 sa.and_(
@@ -181,7 +193,7 @@ def v_miner_status(
         )
         .where(screeners.c.is_active.is_(True))
         .group_by(
-            miner_uploads.c.competition_fk,
+            uploads_sq.c.competition_id,
             challenge_batches.c.miner_fk,
             miners.c.miner_banned_status,
         )
@@ -225,7 +237,7 @@ def v_miner_status(
         .select_from(
             challenge_batches
             .join(scripts, scripts.c.id == challenge_batches.c.script_fk)
-            .join(miner_uploads, miner_uploads.c.script_fk == scripts.c.id)
+            .join(uploads_sq, uploads_sq.c.script_fk == scripts.c.id)
             .join(batch_challenges, batch_challenges.c.challenge_batch_fk == challenge_batches.c.id)
             .outerjoin(scores, scores.c.batch_challenge_fk == batch_challenges.c.id)
             .join(comp_challenges, comp_challenges.c.challenge_fk == batch_challenges.c.challenge_fk)
@@ -238,7 +250,7 @@ def v_miner_status(
             )
         )
         .where(comp_challenges.c.is_active.is_(True))
-        .where(miner_uploads.c.competition_fk == comp_challenges.c.competition_fk)
+        .where(uploads_sq.c.competition_id == comp_challenges.c.competition_fk)
         .where(screener_ids_sq.c.challenge_id.is_(None))
         .group_by(comp_challenges.c.competition_fk, challenge_batches.c.miner_fk)
         .subquery()
@@ -248,22 +260,23 @@ def v_miner_status(
     # (= has_script=True). Miners absent from this view are idle.
     base_sq = (
         sa.select(
-            miner_uploads.c.competition_fk.label("competition_id"),
+            uploads_sq.c.competition_id.label("competition_id"),
             miners.c.id.label("miner_id"),
             miners.c.ss58.label("ss58"),
             miners.c.miner_banned_status.label("is_banned"),
-            sa.func.max(miner_uploads.c.created_at).label("last_submit_at"),
+            uploads_sq.c.last_submit_at.label("last_submit_at"),
         )
         .select_from(
-            miner_uploads
-            .join(scripts, scripts.c.id == miner_uploads.c.script_fk)
+            uploads_sq
+            .join(scripts, scripts.c.id == uploads_sq.c.script_fk)
             .join(miners, miners.c.id == scripts.c.miner_fk)
         )
         .group_by(
-            miner_uploads.c.competition_fk,
+            uploads_sq.c.competition_id,
             miners.c.id,
             miners.c.ss58,
             miners.c.miner_banned_status,
+            uploads_sq.c.last_submit_at,
         )
         .subquery()
     )
