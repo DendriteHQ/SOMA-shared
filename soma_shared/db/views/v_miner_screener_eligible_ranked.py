@@ -6,6 +6,7 @@ from soma_shared.db.models.competition_config import CompetitionConfig
 from soma_shared.db.models.compression_competition_config import (
     CompressionCompetitionConfig,
 )
+from soma_shared.db.models.miner import Miner
 from soma_shared.db.models.miner_upload import MinerUpload
 from soma_shared.db.models.screening_challenge import ScreeningChallenge
 from soma_shared.db.models.screener import Screener
@@ -23,25 +24,18 @@ def v_miner_screener_eligible_ranked() -> ViewDefinition:
     screening = ScreeningChallenge.__table__
     uploads = MinerUpload.__table__
     scripts = Script.__table__
-
-    active_screening_sq = (
-        sa.select(
-            screeners.c.competition_fk.label("competition_id"),
-            screening.c.challenge_fk.label("challenge_id"),
-        )
-        .select_from(screeners.join(screening, screening.c.screener_fk == screeners.c.id))
-        .where(screeners.c.is_active.is_(True))
-        .distinct()
-        .subquery()
-    )
+    miners = Miner.__table__
 
     screener_counts = (
         sa.select(
-            active_screening_sq.c.competition_id,
-            sa.func.count().label("screener_challenge_count"),
+            screeners.c.competition_fk.label("competition_id"),
+            sa.func.count(sa.distinct(screening.c.challenge_fk)).label(
+                "screener_challenge_count"
+            ),
         )
-        .select_from(active_screening_sq)
-        .group_by(active_screening_sq.c.competition_id)
+        .select_from(screeners.join(screening, screening.c.screener_fk == screeners.c.id))
+        .where(screeners.c.is_active.is_(True))
+        .group_by(screeners.c.competition_fk)
         .subquery()
     )
 
@@ -59,7 +53,6 @@ def v_miner_screener_eligible_ranked() -> ViewDefinition:
                 compression_configs.c.competition_config_fk == configs.c.id,
             )
         )
-        .where(configs.c.is_active.is_(True))
         .subquery()
     )
 
@@ -129,9 +122,13 @@ def v_miner_screener_eligible_ranked() -> ViewDefinition:
                 ),
             )
         )
+        .join(
+                miners,
+                miners.c.ss58 == stats.c.ss58,
+            )
         .where(required_pairs.c.screener_required > 0)
         .where(stats.c.screener_scored >= required_pairs.c.screener_required)
-        .where(stats.c.is_banned.is_(False))
+        .where(miners.c.miner_banned_status.is_(False))
         .subquery()
     )
 
