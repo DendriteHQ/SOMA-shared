@@ -12,7 +12,7 @@ from .v_miner_screener_eligible_ranked import v_miner_screener_eligible_ranked
 VIEW_DEFINITIONS: tuple[ViewDefinition, ...] = (
     v_active_competition(),
     v_miner_status(),
-    v_miner_screener_eligible_ranked()
+    v_miner_screener_eligible_ranked(),
 )
 
 # Materialized views — snapshots of the heavy regular views above.
