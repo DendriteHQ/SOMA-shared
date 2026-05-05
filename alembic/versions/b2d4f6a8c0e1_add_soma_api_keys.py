@@ -1,7 +1,7 @@
 """Add soma_api_key table.
 
 Revision ID: b2d4f6a8c0e1
-Revises: 3d2be0724e0c
+Revises: f9a1b2c3d4e5
 Create Date: 2026-04-16
 
 """
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 
 
 revision = "b2d4f6a8c0e1"
-down_revision = "3d2be0724e0c"
+down_revision = "f9a1b2c3d4e5"
 branch_labels = None
 depends_on = None
 
