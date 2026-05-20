@@ -126,6 +126,7 @@ class SubmitSweBenchValidationScoreRequest(BaseModel):
     validation_id: int
     instance_id: str
     resolved: bool
+    logs: str
 
 
 class SubmitSweBenchValidationScoreResponse(BaseModel):
