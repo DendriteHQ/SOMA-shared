@@ -30,6 +30,9 @@ from .validator_registration import ValidatorRegistration
 from .top_miner import TopMiner
 from .somarizzer_api_key import SomarizzerApiKey
 from .soma_api_key import SomaApiKey
+from .swe_bench_task import SweBenchTask
+from .swe_bench_run import SweBenchRun
+from .swe_bench_run_validation import SweBenchRunValidation
 __all__ = [
     "Base",
     "Admin",
@@ -63,4 +66,7 @@ __all__ = [
     "ValidatorRegistration",
     "SomarizzerApiKey",
     "SomaApiKey",
+    "SweBenchTask",
+    "SweBenchRun",
+    "SweBenchRunValidation",
 ]
