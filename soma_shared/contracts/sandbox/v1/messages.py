@@ -108,3 +108,14 @@ class CompactBenchReportRequest(BaseModel):
 class CompactBenchReportResponse(BaseModel):
     """Per-task execution result for the compact-bench backend."""
     success: bool = Field(..., description="Whether request was accepted successfully for execution.")
+
+class ApiGatewayRequest(BaseModel):
+    """Generic API Gateway request wrapper."""
+    body: str = Field(..., description="Raw JSON string of the actual request payload.")
+    run_id: int = Field(..., description="Run identifier for this execution, used for logging and correlation.")
+    
+class ApiGatewayResponse(BaseModel):
+    """Generic API Gateway response wrapper."""
+    success: bool = Field(..., description="Whether the request was processed successfully.")
+    error: Optional[str] = Field(default=None, description="Error message if processing failed.")
+    body: str | None = Field(default=None, description="Raw JSON string of the actual response payload, if applicable.")
