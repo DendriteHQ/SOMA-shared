@@ -109,13 +109,26 @@ class CompactBenchReportResponse(BaseModel):
     """Per-task execution result for the compact-bench backend."""
     success: bool = Field(..., description="Whether request was accepted successfully for execution.")
 
+class ApiGatewayProxyPayload(BaseModel):
+    method: str = Field(default="POST", description="HTTP method for upstream request.")
+    url: str = Field(..., description="Upstream URL to proxy to.")
+    headers: dict[str, str] = Field(default_factory=dict, description="Upstream request headers.")
+    timeout_seconds: float = Field(default=30.0, description="Per-request timeout for upstream call.")
+    body: dict[str, Any] | list[Any] | str | None = Field(
+        default=None,
+        description="Inline request payload.",
+    )
+
+
 class ApiGatewayRequest(BaseModel):
     """Generic API Gateway request wrapper."""
-    body: str = Field(..., description="Raw JSON string of the actual request payload.")
+    body: ApiGatewayProxyPayload = Field(..., description="Typed proxy request payload.")
     run_id: int = Field(..., description="Run identifier for this execution, used for logging and correlation.")
     
 class ApiGatewayResponse(BaseModel):
     """Generic API Gateway response wrapper."""
     success: bool = Field(..., description="Whether the request was processed successfully.")
     error: Optional[str] = Field(default=None, description="Error message if processing failed.")
-    body: str | None = Field(default=None, description="Raw JSON string of the actual response payload, if applicable.")
+    status_code: int | None = Field(default=None, description="Upstream HTTP status code when available.")
+    headers: dict[str, str] | None = Field(default=None, description="Selected upstream response headers.")
+    body: str | None = Field(default=None, description="Raw response payload from upstream, if applicable.")
