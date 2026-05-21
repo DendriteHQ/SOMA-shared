@@ -11,3 +11,32 @@ class UploadSolutionRequest(BaseModel):
 class UploadSolutionResponse(BaseModel):
     ok: bool
     error_msg: str | None = None
+
+
+class AddOpenRouterApiKeyRequest(BaseModel):
+    miner_hotkey: str
+    api_key: str
+
+
+class AddOpenRouterApiKeyResponse(BaseModel):
+    ok: bool
+    error_msg: str | None = None
+
+
+class UpdateOpenRouterApiKeyRequest(BaseModel):
+    miner_hotkey: str
+    api_key: str
+
+
+class UpdateOpenRouterApiKeyResponse(BaseModel):
+    ok: bool
+    error_msg: str | None = None
+
+
+class DeleteOpenRouterApiKeyRequest(BaseModel):
+    miner_hotkey: str
+
+
+class DeleteOpenRouterApiKeyResponse(BaseModel):
+    ok: bool
+    error_msg: str | None = None
