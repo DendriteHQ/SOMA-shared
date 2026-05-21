@@ -92,6 +92,10 @@ class CompactBenchReportRequest(BaseModel):
         default=None,
         description="Total token count reported by the benchmark runtime for this run.",
     )
+    agent_steps: int | None = Field(
+        default=None,
+        description="Best-effort count of agent steps observed during execution.",
+    )
     patch_capture_status: bool = Field(..., description="Whether the patch capture was successful and uploaded to S3.")
     patch_diff: str | None = Field(
         default=None,
