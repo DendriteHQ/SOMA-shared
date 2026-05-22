@@ -2,7 +2,17 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Integer, Numeric, Text
+from sqlalchemy import (
+    BigInteger,
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    String,
+    Text,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .base import Base
@@ -10,6 +20,12 @@ from .base import Base
 
 class SweBenchRun(Base):
     __tablename__ = "swe_bench_runs"
+    __table_args__ = (
+        Index(
+            "ix_swe_bench_runs_status",
+            "status",
+        ),
+    )
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     task_fk: Mapped[int] = mapped_column(
@@ -37,6 +53,13 @@ class SweBenchRun(Base):
     tokens_used: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     time_taken_seconds: Mapped[float | None] = mapped_column(Numeric(10, 4), nullable=True)
     agent_steps: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    status: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        default="pending",
+        server_default="pending",
+    )
+    last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
