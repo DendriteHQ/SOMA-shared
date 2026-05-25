@@ -106,3 +106,28 @@ class QA(BaseModel):
     question_id: str
     question: str
     answer: str
+
+
+class GetSweBenchValidationRequest(BaseModel):
+    pass
+
+
+class SweBenchValidationTask(BaseModel):
+    validation_id: int
+    instance_id: str
+    diff: str
+
+
+class GetSweBenchValidationResponse(BaseModel):
+    task: SweBenchValidationTask | None = None
+
+
+class SubmitSweBenchValidationScoreRequest(BaseModel):
+    validation_id: int
+    instance_id: str
+    resolved: bool
+    logs: str
+
+
+class SubmitSweBenchValidationScoreResponse(BaseModel):
+    ok: bool
