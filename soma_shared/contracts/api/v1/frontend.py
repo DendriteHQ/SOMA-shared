@@ -154,3 +154,65 @@ class CurrentCompetitionTimeframeResponse(BaseModel):
     upload_end: datetime
     evaluation_start: datetime
     evaluation_end: datetime
+
+
+class SweMinerLeaderboardItem(BaseModel):
+    hotkey: str
+    total_score: Optional[float] = None
+    screener_score: Optional[float] = None
+
+
+class SweMinersListResponse(BaseModel):
+    miners: list[SweMinerLeaderboardItem]
+    pagination: Pagination
+
+
+class SweMinerSummary(BaseModel):
+    hotkey: str
+    total_score: Optional[float] = None
+    screener_score: Optional[float] = None
+    task_count: int = 0
+    screener_task_count: int = 0
+
+
+class SweMinerSummaryResponse(BaseModel):
+    miner: SweMinerSummary
+
+
+class SweMinerTaskResultItem(BaseModel):
+    task_name: str
+    is_screener: bool = False
+    pass_without_compression: Optional[bool] = None
+    pass_with_compression: Optional[bool] = None
+    tokens_without_compression: Optional[int] = None
+    tokens_with_compression: Optional[float] = None
+    platform_score: Optional[float] = None
+    run_count: int = 0
+
+
+class SweMinerTaskResultsResponse(BaseModel):
+    tasks: list[SweMinerTaskResultItem]
+    total: int
+
+
+class SweMinerTaskDetailResponse(BaseModel):
+    task: SweMinerTaskResultItem
+
+
+class SweMinerTaskRunItem(BaseModel):
+    run_id: int
+    attempt_no: int
+    pass_with_compression: Optional[bool] = None
+    tokens_with_compression: Optional[int] = None
+    platform_score: Optional[float] = None
+    time_taken_seconds: Optional[float] = None
+    agent_steps: Optional[int] = None
+
+
+class SweMinerTaskRunsResponse(BaseModel):
+    task_name: str
+    is_screener: bool = False
+    pass_without_compression: Optional[bool] = None
+    tokens_without_compression: Optional[int] = None
+    runs: list[SweMinerTaskRunItem]
+    total: int
