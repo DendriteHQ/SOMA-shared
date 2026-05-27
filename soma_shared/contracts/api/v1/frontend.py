@@ -39,6 +39,7 @@ class PartialScore(BaseModel):
 class MinerListItem(BaseModel):
     hotkey: str
     score: Optional[float] = None
+    total_score: Optional[float] = None
     partial_scores: Optional[list[PartialScore]] = None
     last_submit: Optional[datetime] = None
     status: str
