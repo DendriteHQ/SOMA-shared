@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from sqlalchemy import BigInteger, DateTime, Float, String, CheckConstraint, ForeignKey
+from sqlalchemy import BigInteger, Boolean, DateTime, Float, String, CheckConstraint, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .base import Base
@@ -54,6 +54,13 @@ class TopMiner(Base):
         nullable=False,
         default=0.0,
         server_default="0.0",
+    )
+    approved: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default="false",
+        index=True,
     )
     starts_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     ends_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
