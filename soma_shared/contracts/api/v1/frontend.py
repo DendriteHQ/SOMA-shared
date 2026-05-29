@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -29,6 +29,7 @@ class Pagination(BaseModel):
 class MinerCompetitionItem(BaseModel):
     competition_id: int
     competition_name: str
+    competition_type: Literal["compression", "swe"]
 
 
 class PartialScore(BaseModel):
