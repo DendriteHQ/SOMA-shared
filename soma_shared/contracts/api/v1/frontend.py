@@ -160,7 +160,8 @@ class CurrentCompetitionTimeframeResponse(BaseModel):
 class SweMinerLeaderboardItem(BaseModel):
     hotkey: str
     total_score: Optional[float] = None
-    screener_score: Optional[float] = None
+    screener_passed: Optional[bool] = None
+    category_scores: Optional[dict[str, float]] = None
 
 
 class SweMinersListResponse(BaseModel):
@@ -171,7 +172,8 @@ class SweMinersListResponse(BaseModel):
 class SweMinerSummary(BaseModel):
     hotkey: str
     total_score: Optional[float] = None
-    screener_score: Optional[float] = None
+    screener_passed: Optional[bool] = None
+    category_scores: Optional[dict[str, float]] = None
     task_count: int = 0
     screener_task_count: int = 0
 
