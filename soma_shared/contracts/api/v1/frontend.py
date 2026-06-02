@@ -183,6 +183,7 @@ class SweMinerSummaryResponse(BaseModel):
 
 
 class SweMinerTaskResultItem(BaseModel):
+    task_id: int
     task_name: str
     is_screener: bool = False
     pass_without_compression: Optional[bool] = None
@@ -213,6 +214,7 @@ class SweMinerTaskRunItem(BaseModel):
 
 
 class SweMinerTaskRunsResponse(BaseModel):
+    task_id: int
     task_name: str
     is_screener: bool = False
     pass_without_compression: Optional[bool] = None
