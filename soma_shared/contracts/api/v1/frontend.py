@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -29,6 +29,7 @@ class Pagination(BaseModel):
 class MinerCompetitionItem(BaseModel):
     competition_id: int
     competition_name: str
+    competition_type: Literal["compression", "swe"]
 
 
 class PartialScore(BaseModel):
@@ -160,7 +161,8 @@ class CurrentCompetitionTimeframeResponse(BaseModel):
 class SweMinerLeaderboardItem(BaseModel):
     hotkey: str
     total_score: Optional[float] = None
-    screener_score: Optional[float] = None
+    screener_passed: Optional[bool] = None
+    category_scores: Optional[dict[str, float]] = None
 
 
 class SweMinersListResponse(BaseModel):
@@ -171,7 +173,8 @@ class SweMinersListResponse(BaseModel):
 class SweMinerSummary(BaseModel):
     hotkey: str
     total_score: Optional[float] = None
-    screener_score: Optional[float] = None
+    screener_passed: Optional[bool] = None
+    category_scores: Optional[dict[str, float]] = None
     task_count: int = 0
     screener_task_count: int = 0
 
@@ -181,6 +184,7 @@ class SweMinerSummaryResponse(BaseModel):
 
 
 class SweMinerTaskResultItem(BaseModel):
+    task_id: int
     task_name: str
     is_screener: bool = False
     pass_without_compression: Optional[bool] = None
@@ -211,6 +215,7 @@ class SweMinerTaskRunItem(BaseModel):
 
 
 class SweMinerTaskRunsResponse(BaseModel):
+    task_id: int
     task_name: str
     is_screener: bool = False
     pass_without_compression: Optional[bool] = None
