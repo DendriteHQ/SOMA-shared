@@ -11,6 +11,7 @@ T = TypeVar("T")
 class HeartbeatRequest(BaseModel):
     ts: datetime
     version: str
+    competition_id: int | None = None
 
     @field_validator("ts", mode="after")
     @classmethod
