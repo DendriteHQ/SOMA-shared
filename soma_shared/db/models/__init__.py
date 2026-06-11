@@ -33,6 +33,7 @@ from .soma_api_key import SomaApiKey
 from .miner_openrouter_api_key import MinerOpenRouterApiKey
 from .swe_bench_task import SweBenchTask
 from .swe_bench_run import SweBenchRun
+from .swe_bench_run_batch import SweBenchRunBatch
 from .swe_bench_run_validation import SweBenchRunValidation
 __all__ = [
     "Base",
@@ -70,5 +71,6 @@ __all__ = [
     "MinerOpenRouterApiKey",
     "SweBenchTask",
     "SweBenchRun",
+    "SweBenchRunBatch",
     "SweBenchRunValidation",
 ]

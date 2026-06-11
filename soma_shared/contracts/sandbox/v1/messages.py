@@ -73,9 +73,54 @@ class CompactBenchRunTaskRequest(BaseModel):
     )
 
 
+class CompactBenchRunTaskBatchItem(BaseModel):
+    """Task payload used in batch dispatch requests."""
+
+    benchmark: str = Field(..., description="Benchmark dataset identifier.")
+    instance_id: str = Field(..., description="Concrete benchmark instance identifier.")
+    run_id: int = Field(..., description="Run identifier for this execution.")
+    agent_name: str = Field(default="openclaw", description="Compact-bench runtime backend name.")
+    model: str | None = Field(default=None, description="Optional LLM model override.")
+    openclaw_timeout: int | None = Field(default=1800, description="Optional timeout override for OpenClaw execution in seconds.")
+    openclaw_disable_somarizer: bool = Field(default=False)
+    metadata: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Opaque task metadata echoed back in callback reports for caller correlation.",
+    )
+
+
+class CompactBenchRunTaskBatchRequest(BaseModel):
+    """Batch benchmark execution request for the compact-bench backend."""
+
+    batch_id: str = Field(..., description="Batch identifier used for cross-task correlation.")
+    script_presigned_url: str = Field(
+        ...,
+        description=(
+            "Shared presigned S3 URL (GET) used to download the miner code that should be injected into the "
+            "Somarizer/OpenClaw plugin for all tasks in this batch."
+        ),
+    )
+    tasks: list[CompactBenchRunTaskBatchItem] = Field(
+        default_factory=list,
+        description="Task list to execute under a shared batch context.",
+    )
+
+
 class CompactBenchRunTaskResponse(BaseModel):
     """Per-task execution result for the compact-bench backend."""
     success: bool = Field(..., description="Whether request was accepted successfully for execution.")
+
+
+class CompactBenchRunTaskBatchResponse(BaseModel):
+    """Batch dispatch acceptance result for the compact-bench backend."""
+
+    success: bool = Field(..., description="Whether the batch request was accepted for execution.")
+    batch_id: str = Field(..., description="Batch identifier echoed from request.")
+    failed_run_ids: list[int] = Field(
+        default_factory=list,
+        description="Run IDs that were rejected during admission.",
+    )
+    error: str | None = Field(default=None, description="Batch-level error message, when applicable.")
 
 
 class CompactBenchReportRequest(BaseModel):

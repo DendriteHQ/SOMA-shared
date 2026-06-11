@@ -33,6 +33,12 @@ class SweBenchRun(Base):
         ForeignKey("scripts.id"),
         nullable=True,
     )
+    batch_fk: Mapped[int | None] = mapped_column(
+        BigInteger,
+        ForeignKey("swe_bench_run_batches.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     diff_storage_uuid: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
     tokens_used: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     time_taken_seconds: Mapped[float | None] = mapped_column(Numeric(10, 4), nullable=True)
