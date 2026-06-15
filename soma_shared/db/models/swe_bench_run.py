@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Integer, Numeric, Text
+from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Integer, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .base import Base
@@ -33,6 +33,8 @@ class SweBenchRun(Base):
         ForeignKey("scripts.id"),
         nullable=True,
     )
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="pending")
+    last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
     diff_storage_uuid: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
     tokens_used: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     time_taken_seconds: Mapped[float | None] = mapped_column(Numeric(10, 4), nullable=True)
