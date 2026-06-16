@@ -222,3 +222,30 @@ class SweMinerTaskRunsResponse(BaseModel):
     tokens_without_compression: Optional[int] = None
     runs: list[SweMinerTaskRunItem]
     total: int
+
+
+class SweMinerPenaltySummary(BaseModel):
+    categories: dict[str, Optional[float]] = Field(default_factory=dict)
+    total: Optional[float] = None
+
+
+class SweMinerTaskAggregateItem(BaseModel):
+    task: SweMinerTaskResultItem
+    runs: list[SweMinerTaskRunItem] = Field(default_factory=list)
+    total_runs: int = 0
+
+
+class SweCompetitionMinerAggregateItem(BaseModel):
+    miner: SweMinerSummary
+    penalties: SweMinerPenaltySummary
+    tasks: list[SweMinerTaskAggregateItem] = Field(default_factory=list)
+    total_tasks: int = 0
+
+
+class SweCompetitionAggregateResponse(BaseModel):
+    competition_id: int
+    competition_name: str
+    competition_type: Literal["swe"] = "swe"
+    timeframe: Optional[CurrentCompetitionTimeframeResponse] = None
+    miners: list[SweCompetitionMinerAggregateItem] = Field(default_factory=list)
+    total_miners: int = 0
