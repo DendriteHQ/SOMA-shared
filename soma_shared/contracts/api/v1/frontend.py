@@ -30,6 +30,12 @@ class MinerCompetitionItem(BaseModel):
     competition_id: int
     competition_name: str
     competition_type: Literal["compression", "swe"]
+    state: Literal["upload", "evaluation", "finished"]
+    is_active: bool
+    upload_start: Optional[datetime] = None
+    upload_end: Optional[datetime] = None
+    evaluation_start: Optional[datetime] = None
+    evaluation_end: Optional[datetime] = None
 
 
 class PartialScore(BaseModel):
