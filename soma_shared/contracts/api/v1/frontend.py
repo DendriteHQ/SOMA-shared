@@ -237,6 +237,11 @@ class SweMinerTaskAggregateItem(BaseModel):
 
 class SweCompetitionMinerAggregateItem(BaseModel):
     miner: SweMinerSummary
+    status: str
+    last_submit: Optional[datetime] = None
+    registered_at: Optional[datetime] = None
+    contests: int = 0
+    rank: Optional[int] = None
     penalties: SweMinerPenaltySummary
     tasks: list[SweMinerTaskAggregateItem] = Field(default_factory=list)
     total_tasks: int = 0
