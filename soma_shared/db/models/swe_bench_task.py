@@ -18,6 +18,7 @@ class SweBenchTask(Base):
         nullable=False,
     )
     instance_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    benchmark_name: Mapped[str] = mapped_column(String(128), nullable=False)
     planned_repeats: Mapped[int] = mapped_column(
         Integer,
         nullable=False,
