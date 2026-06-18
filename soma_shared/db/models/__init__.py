@@ -34,6 +34,9 @@ from .miner_openrouter_api_key import MinerOpenRouterApiKey
 from .swe_bench_task import SweBenchTask
 from .swe_bench_run import SweBenchRun
 from .swe_bench_run_validation import SweBenchRunValidation
+from .swe_bench_verified_validation import SweBenchVerifiedValidation
+from .swe_explorer_validation import SweExplorerValidation
+from .terminal_bench_validation import TerminalBenchValidation
 __all__ = [
     "Base",
     "Admin",
@@ -71,4 +74,7 @@ __all__ = [
     "SweBenchTask",
     "SweBenchRun",
     "SweBenchRunValidation",
+    "SweBenchVerifiedValidation",
+    "SweExplorerValidation",
+    "TerminalBenchValidation",
 ]
