@@ -37,6 +37,9 @@ class SweBenchRun(Base):
     last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
     diff_storage_uuid: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
     tokens_used: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    input_tokens: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    cached_input_tokens: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    output_tokens: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     time_taken_seconds: Mapped[float | None] = mapped_column(Numeric(10, 4), nullable=True)
     agent_steps: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(

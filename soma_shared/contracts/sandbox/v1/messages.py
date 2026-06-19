@@ -92,6 +92,18 @@ class CompactBenchReportRequest(BaseModel):
         default=None,
         description="Total token count reported by the benchmark runtime for this run.",
     )
+    input_tokens: int | None = Field(
+        default=None,
+        description="Input prompt tokens excluding cache-read tokens.",
+    )
+    cached_input_tokens: int | None = Field(
+        default=None,
+        description="Input tokens served from cache reads.",
+    )
+    output_tokens: int | None = Field(
+        default=None,
+        description="Output/completion tokens.",
+    )
     agent_steps: int | None = Field(
         default=None,
         description="Best-effort count of agent steps observed during execution.",
