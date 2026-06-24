@@ -248,6 +248,12 @@ class SweMinerTaskAggregateItem(BaseModel):
     total_runs: int = 0
     baseline_weighted_tokens: Optional[float] = None
     miner_weighted_tokens: Optional[float] = None
+    baseline_input_tokens: Optional[int] = None
+    baseline_cached_input_tokens: Optional[int] = None
+    baseline_output_tokens: Optional[int] = None
+    miner_input_tokens: Optional[int] = None
+    miner_cached_input_tokens: Optional[int] = None
+    miner_output_tokens: Optional[int] = None
 
 
 class SweCompetitionMinerAggregateItem(BaseModel):
@@ -262,6 +268,12 @@ class SweCompetitionMinerAggregateItem(BaseModel):
     total_tasks: int = 0
     baseline_weighted_tokens_total: Optional[float] = None
     miner_weighted_tokens_total: Optional[float] = None
+    baseline_input_tokens_total: Optional[int] = None
+    baseline_cached_input_tokens_total: Optional[int] = None
+    baseline_output_tokens_total: Optional[int] = None
+    miner_input_tokens_total: Optional[int] = None
+    miner_cached_input_tokens_total: Optional[int] = None
+    miner_output_tokens_total: Optional[int] = None
 
 
 class SweCompetitionAggregateResponse(BaseModel):
