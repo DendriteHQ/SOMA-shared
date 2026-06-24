@@ -239,6 +239,8 @@ class SweMinerTaskAggregateItem(BaseModel):
     task: SweMinerTaskResultItem
     runs: list[SweMinerTaskRunItem] = Field(default_factory=list)
     total_runs: int = 0
+    baseline_weighted_tokens: Optional[float] = None
+    miner_weighted_tokens: Optional[float] = None
 
 
 class SweCompetitionMinerAggregateItem(BaseModel):
@@ -251,6 +253,8 @@ class SweCompetitionMinerAggregateItem(BaseModel):
     penalties: SweMinerPenaltySummary
     tasks: list[SweMinerTaskAggregateItem] = Field(default_factory=list)
     total_tasks: int = 0
+    baseline_weighted_tokens_total: Optional[float] = None
+    miner_weighted_tokens_total: Optional[float] = None
 
 
 class SweCompetitionAggregateResponse(BaseModel):
