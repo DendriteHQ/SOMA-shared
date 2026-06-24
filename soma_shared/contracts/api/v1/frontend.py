@@ -197,6 +197,9 @@ class SweMinerTaskResultItem(BaseModel):
     pass_with_compression: Optional[bool] = None
     tokens_without_compression: Optional[int] = None
     tokens_with_compression: Optional[float] = None
+    input_tokens_with_compression: Optional[float] = None
+    cached_input_tokens_with_compression: Optional[float] = None
+    output_tokens_with_compression: Optional[float] = None
     platform_score: Optional[float] = None
     run_count: int = 0
 
@@ -215,6 +218,10 @@ class SweMinerTaskRunItem(BaseModel):
     attempt_no: int
     pass_with_compression: Optional[bool] = None
     tokens_with_compression: Optional[int] = None
+    input_tokens_with_compression: Optional[int] = None
+    cached_input_tokens_with_compression: Optional[int] = None
+    output_tokens_with_compression: Optional[int] = None
+    weighted_tokens_with_compression: Optional[float] = None
     platform_score: Optional[float] = None
     time_taken_seconds: Optional[float] = None
     agent_steps: Optional[int] = None
