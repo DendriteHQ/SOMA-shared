@@ -54,3 +54,4 @@ class SweBenchRun(Base):
         nullable=False,
     )
     baseline_run: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    benchmark_type: Mapped[str] = mapped_column(String(64), nullable=False, server_default="swebench_verified")

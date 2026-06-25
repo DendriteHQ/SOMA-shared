@@ -116,6 +116,7 @@ class GetSweBenchValidationRequest(BaseModel):
 class SweBenchValidationTask(BaseModel):
     validation_id: int
     benchmark: str
+    benchmark_type: str
     instance_id: str
     diff: str
 
@@ -130,6 +131,7 @@ class SubmitSweBenchValidationScoreRequest(BaseModel):
     instance_id: str
     resolved: bool
     logs: str
+    metrics: dict[str, float] | None = None
 
 
 class SubmitSweBenchValidationScoreResponse(BaseModel):

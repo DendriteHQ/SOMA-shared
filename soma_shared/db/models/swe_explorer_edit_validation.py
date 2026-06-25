@@ -6,13 +6,13 @@ from sqlalchemy.orm import Mapped, mapped_column
 from .base import Base
 
 
-class TerminalBenchValidation(Base):
-    __tablename__ = "terminal_bench_validations"
+class SweExplorerEditValidation(Base):
+    __tablename__ = "swe_explorer_edit_validations"
 
     validation_fk: Mapped[int] = mapped_column(
         BigInteger,
         ForeignKey("swe_bench_run_validations.id", ondelete="CASCADE"),
         primary_key=True,
     )
-    score: Mapped[bool] = mapped_column(Boolean, nullable=False)
-    metrics: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    resolved: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    details: Mapped[dict | None] = mapped_column(JSON, nullable=True)

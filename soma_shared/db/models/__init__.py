@@ -36,7 +36,7 @@ from .swe_bench_run import SweBenchRun
 from .swe_bench_run_validation import SweBenchRunValidation
 from .swe_bench_verified_validation import SweBenchVerifiedValidation
 from .swe_explorer_validation import SweExplorerValidation
-from .terminal_bench_validation import TerminalBenchValidation
+from .swe_explorer_edit_validation import SweExplorerEditValidation
 __all__ = [
     "Base",
     "Admin",
@@ -76,5 +76,5 @@ __all__ = [
     "SweBenchRunValidation",
     "SweBenchVerifiedValidation",
     "SweExplorerValidation",
-    "TerminalBenchValidation",
+    "SweExplorerEditValidation",
 ]

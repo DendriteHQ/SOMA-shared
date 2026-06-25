@@ -14,5 +14,5 @@ class SweBenchVerifiedValidation(Base):
         ForeignKey("swe_bench_run_validations.id", ondelete="CASCADE"),
         primary_key=True,
     )
-    score: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    resolved: Mapped[bool] = mapped_column(Boolean, nullable=False)
     details: Mapped[dict | None] = mapped_column(JSON, nullable=True)
