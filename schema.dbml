@@ -1,0 +1,512 @@
+/* red - cascade on delete */
+/* blue - set fk null on delete */
+
+/* ---------- Core identities ---------- */
+
+Table validators {
+  id bigint [pk, increment]
+  ss58 varchar(128) [not null, unique]
+  ip varchar(45)
+  port int
+  created_at timestamptz [not null]
+  last_seen_at timestamptz
+  current_status varchar(32) [not null]
+  version varchar(128)
+  code_changed boolean
+  model varchar(256)
+  is_archive boolean [not null, default: false]
+
+  Note: 'In Postgres: ip inet. current_status can be an enum if desired.'
+}
+
+Table miners {
+  id bigint [pk, increment]
+  ss58 varchar(128) [not null, unique]
+  miner_banned_status boolean [not null, default: false]
+  created_at timestamptz [not null]
+}
+
+Table admins {
+  id bigint [pk, increment]
+  public_key varchar(255) [not null, unique]
+  created_at timestamptz [not null]
+}
+
+/* ---------- Requests / audit trail ---------- */
+
+Table requests [headercolor: #e74c3c] {
+  id bigint [pk, increment]
+  external_request_id varchar(64) [not null, unique]
+  endpoint varchar(255) [not null]
+  method varchar(16) [not null]
+  created_at timestamptz [not null]
+  payload json [not null]
+  response_payload json
+  status_code int
+  db_query_count bigint
+  db_error_count bigint
+  db_total_duration_ms float
+  db_slow_query_count bigint
+  db_operation_counts json
+  db_slowest_query_ms float
+  db_slowest_query_operation varchar(50)
+  db_slowest_query_preview text
+}
+
+Table signed_requests [headercolor: #e74c3c] {
+  id bigint [pk, increment]
+  request_fk bigint [not null, unique]
+  signature text [not null]
+  nonce text [not null]
+  signer_validator_fk bigint
+  signer_miner_fk bigint
+  signer_ss58 varchar(128)
+  created_at timestamptz [not null]
+}
+
+Table burn_requests [headercolor: #e74c3c] {
+  id bigint [pk, increment]
+  request_fk bigint [not null, unique]
+  created_at timestamptz [not null]
+  is_active boolean [not null]
+  burn_ratio float [not null, default: 1.0]
+
+  Note: 'Check: burn_ratio >= 0 AND burn_ratio <= 1.'
+}
+
+Table exception_logs [headercolor: #e74c3c] {
+  id bigint [pk, increment]
+  request_fk bigint
+  created_at timestamptz [not null]
+  exception_type varchar(255) [not null]
+  message text
+  traceback text
+  context json
+}
+
+/* ---------- Validator lifecycle & telemetry ---------- */
+
+Table validator_registrations [headercolor: #3498db] {
+  id bigint [pk, increment]
+  validator_fk bigint [not null]
+  request_fk bigint
+  registered_at timestamptz [not null]
+  ip varchar(45)
+  port int
+  is_active boolean [not null]
+}
+
+Table validator_heartbeats [headercolor: #3498db] {
+  id bigint [pk, increment]
+  validator_fk bigint [not null]
+  request_fk bigint
+  status varchar(32) [not null]
+  created_at timestamptz [not null]
+}
+
+/* ---------- Scripts / miner uploads ---------- */
+
+Table scripts [headercolor: #3498db] {
+  id bigint [pk, increment]
+  script_uuid uuid [not null, unique]
+  miner_fk bigint [not null]
+  request_fk bigint
+  created_at timestamptz [not null]
+}
+
+Table miner_uploads [headercolor: #3498db] {
+  id bigint [pk, increment]
+  script_fk bigint [not null]
+  request_fk bigint
+  competition_fk bigint
+  created_at timestamptz [not null]
+
+  Indexes {
+    (script_fk, competition_fk, created_at)
+  }
+}
+
+/* ---------- Competitions ---------- */
+
+Table competitions [headercolor: #e74c3c] {
+  id bigint [pk, increment]
+  competition_name text [not null]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table competition_configs [headercolor: #e74c3c] {
+  id bigint [pk, increment]
+  competition_fk bigint [not null, unique]
+  is_active boolean [not null, default: false]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table compression_competition_config [headercolor: #e74c3c] {
+  id bigint [pk, increment]
+  competition_config_fk bigint [not null, unique]
+  compression_ratios json [not null]
+  is_partial_winner boolean [not null, default: false]
+}
+
+Table competition_timeframes [headercolor: #e74c3c] {
+  id bigint [pk, increment]
+  competition_config_fk bigint [not null, unique]
+  upload_starts_at timestamptz [not null]
+  upload_ends_at timestamptz [not null]
+  eval_starts_at timestamptz [not null]
+  eval_ends_at timestamptz [not null]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+
+  Note: 'Checks: upload_ends_at > upload_starts_at; eval_ends_at > eval_starts_at; eval_starts_at >= upload_ends_at.'
+}
+
+/* ---------- Screeners ---------- */
+
+Table screeners [headercolor: #e74c3c] {
+  id bigint [pk, increment]
+  competition_fk bigint [not null, unique]
+  screener_name text [not null]
+  description text
+  is_active boolean [not null, default: true]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table screening_challenges [headercolor: #e74c3c] {
+  id bigint [pk, increment]
+  screener_fk bigint [not null]
+  challenge_fk bigint [not null]
+
+  Indexes {
+    (screener_fk, challenge_fk)
+    (challenge_fk, screener_fk)
+  }
+}
+
+/* ---------- Challenges / Q&A ---------- */
+
+Table challenges [headercolor: #e74c3c] {
+  id bigint [pk, increment]
+  challenge_text text [not null]
+  challenge_name text [not null]
+  generation_timestamp text [not null]
+}
+
+Table competition_challenges [headercolor: #e74c3c] {
+  id bigint [pk, increment]
+  competition_fk bigint [not null]
+  challenge_fk bigint [not null]
+  is_active boolean [not null]
+
+  Indexes {
+    (competition_fk, challenge_fk)
+    (challenge_fk, competition_fk)
+  }
+
+  Note: 'In Postgres these are partial indexes where is_active = true.'
+}
+
+Table questions [headercolor: #e74c3c] {
+  id bigint [pk, increment]
+  challenge_fk bigint [not null]
+  question text [not null]
+}
+
+Table answers [headercolor: #e74c3c] {
+  id bigint [pk, increment]
+  question_fk bigint [not null]
+  answer text [not null]
+}
+
+/* ---------- SWE-bench ---------- */
+
+Table swe_bench_tasks [headercolor: #e74c3c] {
+  id bigint [pk, increment]
+  competition_fk bigint [not null]
+  instance_id varchar(255) [not null]
+  benchmark_name varchar(128) [not null]
+  planned_repeats int [not null, default: 1]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+  is_screener boolean [not null, default: false]
+}
+
+Table swe_bench_runs [headercolor: #e74c3c] {
+  id bigint [pk, increment]
+  task_fk bigint [not null]
+  request_fk bigint
+  attempt_no int [not null]
+  miner_fk bigint
+  script_fk bigint
+  status varchar
+  last_error varchar
+  diff_storage_uuid text [not null, unique]
+  tokens_used bigint
+  time_taken_seconds decimal(10,4)
+  agent_steps int
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+  baseline_run boolean [not null]
+  benchmark_type varchar(64) [not null, default: 'swebench_verified']
+}
+
+Table swe_bench_run_validations [headercolor: #e74c3c] {
+  id bigint [pk, increment]
+  run_fk bigint [not null]
+  request_fk bigint
+  validator_fk bigint [not null]
+  logs varchar
+  claimed_at timestamptz
+  claim_expires_at timestamptz
+  created_at timestamptz [not null]
+  scored_at timestamptz
+}
+
+Table swe_bench_verified_validations [headercolor: #e74c3c] {
+  validation_fk bigint [pk]
+  resolved boolean [not null]
+  details json
+}
+
+Table swe_explorer_edit_validations [headercolor: #e74c3c] {
+  validation_fk bigint [pk]
+  resolved boolean [not null]
+  details json
+}
+
+Table swe_explorer_validations [headercolor: #e74c3c] {
+  validation_fk bigint [pk]
+
+  precision decimal(10,6)
+  recall decimal(10,6)
+  f1_score decimal(10,6)
+  hit_file_rate decimal(10,6)
+  noise_file_rate decimal(10,6)
+  weighted_core_coverage decimal(10,6)
+
+  Note: 'Check: score >= 0 AND score <= 1.'
+}
+
+/* ---------- Batches / scoring ---------- */
+
+Table challenge_batches [headercolor: #e74c3c] {
+  id bigint [pk, increment]
+  miner_fk bigint [not null]
+  script_fk bigint [not null]
+  created_at timestamptz [not null]
+
+  Indexes {
+    (script_fk)
+  }
+}
+
+Table batch_challenges [headercolor: #e74c3c] {
+  id bigint [pk, increment]
+  challenge_batch_fk bigint [not null]
+  challenge_fk bigint [not null]
+  compression_ratio decimal(10,4) [not null]
+
+  Indexes {
+    (challenge_batch_fk, challenge_fk, compression_ratio) [unique]
+    (challenge_fk, challenge_batch_fk)
+  }
+}
+
+Table batch_assignments [headercolor: #e74c3c] {
+  id bigint [pk, increment]
+  challenge_batch_fk bigint [not null, unique]
+  validator_fk bigint [not null]
+  assigned_at timestamptz [not null]
+  done_at timestamptz
+}
+
+Table batch_question_answers [headercolor: #e74c3c] {
+  id bigint [pk, increment]
+  batch_challenge_fk bigint [not null]
+  question_fk bigint [not null]
+  produced_answer text [not null]
+  uploaded_at timestamptz [not null]
+
+  Indexes {
+    (batch_challenge_fk, question_fk) [unique]
+  }
+}
+
+Table batch_question_scores [headercolor: #e74c3c] {
+  id bigint [pk, increment]
+  batch_challenge_fk bigint [not null]
+  question_fk bigint [not null]
+  validator_fk bigint [not null]
+  score decimal(10,4) [not null]
+  uploaded_at timestamptz [not null]
+  details json
+
+  Indexes {
+    (batch_challenge_fk, question_fk, validator_fk) [unique]
+  }
+}
+
+Table batch_challenge_scores [headercolor: #e74c3c] {
+  id bigint [pk, increment]
+  batch_challenge_fk bigint [not null]
+  validator_fk bigint
+  score decimal(10,4) [not null]
+  created_at timestamptz [not null]
+
+  Indexes {
+    (batch_challenge_fk, validator_fk) [unique]
+  }
+}
+
+Table batch_compressed_texts [headercolor: #e74c3c] {
+  id bigint [pk, increment]
+  batch_challenge_fk bigint [not null, unique]
+  storage_uuid text [not null, unique]
+  execution_time_seconds decimal(10,4)
+  created_at timestamptz [not null]
+}
+
+/* ---------- Winners ---------- */
+
+Table top_miners {
+  id bigint [pk, increment]
+  ss58 varchar(128) [not null]
+  competition_fk bigint
+  winner_type varchar(32) [not null, default: 'overall']
+  compression_ratio float
+  weight float [not null, default: 0.0]
+  starts_at timestamptz [not null]
+  ends_at timestamptz [not null]
+  miner_fk bigint
+  script_fk bigint
+  created_at timestamptz [not null]
+
+  Indexes {
+    (ss58)
+    (competition_fk)
+    (winner_type)
+    (compression_ratio)
+    (miner_fk)
+  }
+
+  Note: "Checks: ends_at > starts_at; winner_type IN ('overall','compression_ratio'); overall => compression_ratio IS NULL; compression_ratio => compression_ratio IS NOT NULL."
+}
+
+/* ---------- API keys ---------- */
+
+Table soma_api_key {
+  id bigint [pk, increment]
+  prefix varchar(16) [not null, unique]
+  key_hash varchar(64) [not null]
+  rate_limit_rpm int
+  rate_limit_rpd int
+  is_active boolean [not null, default: true]
+  created_at timestamptz [not null]
+  revoked_at timestamptz
+}
+
+Table somarizzer_api_keys {
+  id bigint [pk, increment]
+  prefix varchar(16) [not null, unique]
+  key_hash varchar(64) [not null]
+  rate_limit_rpm int
+  rate_limit_rpd int
+  is_active boolean [not null, default: true]
+  is_miner boolean [not null, default: false]
+  hotkey varchar(64)
+  created_at timestamptz [not null]
+  revoked_at timestamptz
+
+  Note: 'Postgres partial unique index exists for hotkey where is_active=true and hotkey IS NOT NULL.'
+}
+
+Table miner_openrouter_api_keys {
+  id bigint [pk, increment]
+  miner_fk bigint [not null, unique]
+  secret_backend varchar(64) [not null, default: 'aws_secrets_manager']
+  secret_ref varchar(512) [not null, unique]
+  key_fingerprint varchar(64) [not null]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+  revoked_at timestamptz
+}
+
+/* ---------- Relationships ---------- */
+
+Ref: signed_requests.request_fk > requests.id [delete: cascade]
+Ref: burn_requests.request_fk > requests.id [delete: cascade]
+Ref: exception_logs.request_fk > requests.id [delete: cascade]
+
+Ref: signed_requests.signer_validator_fk > validators.id
+Ref: signed_requests.signer_miner_fk > miners.id
+
+Ref: swe_bench_verified_validations.validation_fk > swe_bench_run_validations.id [delete: cascade]
+Ref: swe_explorer_edit_validations.validation_fk > swe_bench_run_validations.id [delete: cascade]
+Ref: swe_explorer_validations.validation_fk > swe_bench_run_validations.id [delete: cascade]
+
+Ref: validator_registrations.validator_fk > validators.id
+Ref: validator_registrations.request_fk > requests.id [delete: set null]
+
+Ref: validator_heartbeats.validator_fk > validators.id
+Ref: validator_heartbeats.request_fk > requests.id [delete: set null]
+
+Ref: scripts.miner_fk > miners.id
+Ref: scripts.request_fk > requests.id [delete: set null]
+
+Ref: miner_uploads.script_fk > scripts.id
+Ref: miner_uploads.request_fk > requests.id
+Ref: miner_uploads.competition_fk > competitions.id [delete: set null]
+
+Ref: competition_configs.competition_fk > competitions.id [delete: cascade]
+Ref: compression_competition_config.competition_config_fk > competition_configs.id [delete: cascade]
+Ref: competition_timeframes.competition_config_fk > competition_configs.id [delete: cascade]
+
+Ref: screeners.competition_fk > competitions.id [delete: cascade]
+Ref: screening_challenges.screener_fk > screeners.id [delete: cascade]
+Ref: screening_challenges.challenge_fk > challenges.id [delete: cascade]
+
+Ref: competition_challenges.competition_fk > competitions.id [delete: cascade]
+Ref: competition_challenges.challenge_fk > challenges.id [delete: cascade]
+
+Ref: questions.challenge_fk > challenges.id [delete: cascade]
+Ref: answers.question_fk > questions.id [delete: cascade]
+
+Ref: swe_bench_tasks.competition_fk > competitions.id [delete: cascade]
+
+Ref: swe_bench_runs.task_fk > swe_bench_tasks.id [delete: cascade]
+Ref: swe_bench_runs.request_fk > requests.id [delete: set null]
+Ref: swe_bench_runs.miner_fk > miners.id
+Ref: swe_bench_runs.script_fk > scripts.id
+
+Ref: swe_bench_run_validations.run_fk > swe_bench_runs.id [delete: cascade]
+Ref: swe_bench_run_validations.request_fk > requests.id [delete: set null]
+Ref: swe_bench_run_validations.validator_fk > validators.id
+
+Ref: challenge_batches.miner_fk > miners.id
+Ref: challenge_batches.script_fk > scripts.id
+
+Ref: batch_challenges.challenge_batch_fk > challenge_batches.id [delete: cascade]
+Ref: batch_challenges.challenge_fk > challenges.id [delete: restrict]
+
+Ref: batch_assignments.challenge_batch_fk > challenge_batches.id [delete: cascade]
+Ref: batch_assignments.validator_fk > validators.id
+
+Ref: batch_question_answers.batch_challenge_fk > batch_challenges.id [delete: cascade]
+Ref: batch_question_answers.question_fk > questions.id [delete: cascade]
+
+Ref: batch_question_scores.batch_challenge_fk > batch_challenges.id [delete: cascade]
+Ref: batch_question_scores.question_fk > questions.id [delete: cascade]
+Ref: batch_question_scores.validator_fk > validators.id
+
+Ref: batch_challenge_scores.batch_challenge_fk > batch_challenges.id [delete: cascade]
+Ref: batch_challenge_scores.validator_fk > validators.id
+
+Ref: batch_compressed_texts.batch_challenge_fk > batch_challenges.id [delete: cascade]
+
+Ref: top_miners.competition_fk > competitions.id [delete: set null]
+Ref: top_miners.miner_fk > miners.id [delete: set null]
+Ref: top_miners.script_fk > scripts.id [delete: set null]
+Ref: miner_openrouter_api_keys.miner_fk > miners.id [delete: cascade]

@@ -1,4 +1,4 @@
-"""add benchmark specific validation tables
+"""add swe_bench_verified_validations and swe_explorer_validations tables
 
 Revision ID: f1e2d3c4b5a6
 Revises: e8f3b1a2c4d5
@@ -22,7 +22,20 @@ def upgrade() -> None:
     op.create_table(
         "swe_bench_verified_validations",
         sa.Column("validation_fk", sa.BigInteger(), nullable=False),
-        sa.Column("score", sa.Boolean(), nullable=False),
+        sa.Column("resolved", sa.Boolean(), nullable=False),
+        sa.Column("details", sa.JSON(), nullable=True),
+        sa.ForeignKeyConstraint(
+            ["validation_fk"],
+            ["swe_bench_run_validations.id"],
+            ondelete="CASCADE",
+        ),
+        sa.PrimaryKeyConstraint("validation_fk"),
+    )
+
+    op.create_table(
+        "swe_explorer_edit_validations",
+        sa.Column("validation_fk", sa.BigInteger(), nullable=False),
+        sa.Column("resolved", sa.Boolean(), nullable=False),
         sa.Column("details", sa.JSON(), nullable=True),
         sa.ForeignKeyConstraint(
             ["validation_fk"],
@@ -35,38 +48,12 @@ def upgrade() -> None:
     op.create_table(
         "swe_explorer_validations",
         sa.Column("validation_fk", sa.BigInteger(), nullable=False),
-        sa.Column("primary_metric", sa.String(length=64), nullable=False),
         sa.Column("precision", sa.Numeric(precision=10, scale=6), nullable=True),
         sa.Column("recall", sa.Numeric(precision=10, scale=6), nullable=True),
         sa.Column("f1_score", sa.Numeric(precision=10, scale=6), nullable=True),
         sa.Column("hit_file_rate", sa.Numeric(precision=10, scale=6), nullable=True),
         sa.Column("noise_file_rate", sa.Numeric(precision=10, scale=6), nullable=True),
-        sa.Column("hit_region_rate", sa.Numeric(precision=10, scale=6), nullable=True),
-        sa.Column("noise_region_rate", sa.Numeric(precision=10, scale=6), nullable=True),
         sa.Column("weighted_core_coverage", sa.Numeric(precision=10, scale=6), nullable=True),
-        sa.Column("context_efficiency", sa.Numeric(precision=10, scale=6), nullable=True),
-        sa.Column("optional_coverage", sa.Numeric(precision=10, scale=6), nullable=True),
-        sa.Column("ndcg_at_100", sa.Numeric(precision=10, scale=6), nullable=True),
-        sa.Column("ndcg_at_300", sa.Numeric(precision=10, scale=6), nullable=True),
-        sa.Column("ndcg_at_500", sa.Numeric(precision=10, scale=6), nullable=True),
-        sa.Column("recall_at_100", sa.Numeric(precision=10, scale=6), nullable=True),
-        sa.Column("recall_at_300", sa.Numeric(precision=10, scale=6), nullable=True),
-        sa.Column("recall_at_500", sa.Numeric(precision=10, scale=6), nullable=True),
-        sa.Column("first_useful_hit", sa.Numeric(precision=10, scale=6), nullable=True),
-        sa.Column("metrics", sa.JSON(), nullable=True),
-        sa.ForeignKeyConstraint(
-            ["validation_fk"],
-            ["swe_bench_run_validations.id"],
-            ondelete="CASCADE",
-        ),
-        sa.PrimaryKeyConstraint("validation_fk"),
-    )
-
-    op.create_table(
-        "terminal_bench_validations",
-        sa.Column("validation_fk", sa.BigInteger(), nullable=False),
-        sa.Column("score", sa.Boolean(), nullable=False),
-        sa.Column("metrics", sa.JSON(), nullable=True),
         sa.ForeignKeyConstraint(
             ["validation_fk"],
             ["swe_bench_run_validations.id"],
@@ -79,10 +66,10 @@ def upgrade() -> None:
     op.execute(
         sa.text(
             """
-            INSERT INTO swe_bench_verified_validations (validation_fk, score, details)
+            INSERT INTO swe_bench_verified_validations (validation_fk, resolved, details)
             SELECT
                 v.id AS validation_fk,
-                COALESCE(v.resolved, FALSE) AS score,
+                COALESCE(v.resolved, FALSE) AS resolved,
                 NULL::json AS details
             FROM swe_bench_run_validations v
             JOIN swe_bench_runs r ON r.id = v.run_fk
@@ -95,6 +82,6 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_table("terminal_bench_validations")
     op.drop_table("swe_explorer_validations")
+    op.drop_table("swe_explorer_edit_validations")
     op.drop_table("swe_bench_verified_validations")
