@@ -246,6 +246,7 @@ class SweMinerTaskAggregateItem(BaseModel):
     task: SweMinerTaskResultItem
     runs: list[SweMinerTaskRunItem] = Field(default_factory=list)
     total_runs: int = 0
+    benchmark_type: Optional[str] = None
     baseline_weighted_tokens: Optional[float] = None
     miner_weighted_tokens: Optional[float] = None
     baseline_input_tokens: Optional[int] = None
