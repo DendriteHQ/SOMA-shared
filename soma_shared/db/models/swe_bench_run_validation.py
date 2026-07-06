@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Text
+from sqlalchemy import BigInteger, DateTime, ForeignKey, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .base import Base
@@ -27,7 +27,6 @@ class SweBenchRunValidation(Base):
         ForeignKey("validators.id"),
         nullable=True,
     )
-    resolved: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     logs: Mapped[str | None] = mapped_column(Text, nullable=True)
     claimed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     claim_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
