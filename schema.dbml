@@ -245,6 +245,7 @@ Table swe_bench_runs [headercolor: #e74c3c] {
   last_error varchar
   diff_storage_uuid text [not null, unique]
   trajectory_uuid text [unique]
+  compression_logs_uuid text [unique]
   tokens_used bigint
   time_taken_seconds decimal(10,4)
   agent_steps int
