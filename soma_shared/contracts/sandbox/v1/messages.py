@@ -63,6 +63,23 @@ class CompactBenchRunTaskRequest(BaseModel):
             "Somarizer/OpenClaw plugin for this task."
         ),
     )
+    trajectory_presigned_url: str | None = Field(
+        default=None,
+        description=(
+            "Presigned S3 URL (PUT) used to upload the agent trajectory (JSONL) captured during "
+            "this run. The sandbox uploads the trajectory to the designated URL without requiring "
+            "direct S3 credentials. When omitted, trajectory upload is skipped."
+        ),
+    )
+    compression_logs_presigned_url: str | None = Field(
+        default=None,
+        description=(
+            "Presigned S3 URL (PUT) used to upload the compressor execution log captured during "
+            "this run: JSONL with one entry per miner-compressor invocation on the compression "
+            "service's /transform endpoint (timing, captured stdout/stderr, errors). The sandbox "
+            "uploads it without requiring direct S3 credentials. When omitted, upload is skipped."
+        ),
+    )
     agent_name: str = Field(default="openclaw", description="Compact-bench runtime backend name.")
     benchmark_type: str = Field(default="swebench_verified", description="Benchmark type: swebench_verified, swe_explorer_explore, or swe_explorer_edit.")
     model: str | None = Field(default=None, description="Optional LLM model override.")
@@ -108,6 +125,22 @@ class CompactBenchReportRequest(BaseModel):
     agent_steps: int | None = Field(
         default=None,
         description="Best-effort count of agent steps observed during execution.",
+    )
+    trajectory_upload_status: bool | None = Field(
+        default=None,
+        description=(
+            "Whether the agent trajectory was uploaded to the presigned trajectory URL. "
+            "True when the upload succeeded, False when it was attempted or expected but failed "
+            "(including a missing trajectory file), None when no trajectory_presigned_url was provided."
+        ),
+    )
+    compression_logs_upload_status: bool | None = Field(
+        default=None,
+        description=(
+            "Whether the compression-service execution logs were uploaded to the presigned URL. "
+            "True when the upload succeeded, False when it was attempted or expected but failed "
+            "(including a missing log file), None when no compression_logs_presigned_url was provided."
+        ),
     )
     patch_capture_status: bool = Field(..., description="Whether the patch capture was successful and included in the report.")
     patch_diff: str | None = Field(
