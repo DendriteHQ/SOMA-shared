@@ -37,6 +37,7 @@ class SweBenchRun(Base):
     last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
     diff_storage_uuid: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
     trajectory_uuid: Mapped[str | None] = mapped_column(Text, nullable=True, unique=True)
+    compression_logs_uuid: Mapped[str | None] = mapped_column(Text, nullable=True, unique=True)
     tokens_used: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     input_tokens: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     cached_input_tokens: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
