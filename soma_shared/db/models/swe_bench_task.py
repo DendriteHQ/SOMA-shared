@@ -42,3 +42,14 @@ class SweBenchTask(Base):
         default=False,
         server_default="false",
     )
+    # Screening tier for two-stage screening. NULL = full-evaluation task,
+    # 1 = stage-1 liveness/non-regression screener (public, no saving threshold),
+    # 2 = stage-2 qualification screener (hidden, saving threshold + ranking).
+    # Kept orthogonal to is_screener so existing screener views/frontend that key
+    # off is_screener keep working; screener_stage only gates orchestrator seeding,
+    # dispatch priority and score inclusion.
+    screener_stage: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+        default=None,
+    )
