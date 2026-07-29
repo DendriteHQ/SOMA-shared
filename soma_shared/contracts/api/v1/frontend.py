@@ -19,6 +19,14 @@ class FrontendSummaryResponse(BaseModel):
     burn_ratio: float = Field(default=1.0, ge=0, le=1)
 
 
+class FrontendEconomicsResponse(BaseModel):
+    server_ts: datetime
+    registration_cost_tao: float = 0.0
+    alpha_price_tao: float = 0.0
+    prize_pool_tao: float = 0.0
+    burn_ratio: float = Field(default=1.0, ge=0, le=1)
+
+
 class Pagination(BaseModel):
     total: int
     page: int
