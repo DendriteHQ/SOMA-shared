@@ -233,6 +233,7 @@ Table swe_bench_tasks [headercolor: #e74c3c] {
   updated_at timestamptz [not null]
   is_screener boolean [not null, default: false]
   screener_stage integer [note: 'NULL=eval task, 1=stage-1 liveness screener, 2=stage-2 qualification screener']
+  complexity varchar(16) [note: 'NULL=not classified, else short|medium|long; dimension the incentive layers are built over']
 }
 
 Table swe_bench_runs [headercolor: #e74c3c] {
