@@ -72,6 +72,7 @@ class SweMinerTaskResultItem(BaseModel):
     input_tokens_with_compression: Optional[float] = None
     cached_input_tokens_with_compression: Optional[float] = None
     output_tokens_with_compression: Optional[float] = None
+    jev_input_tokens_with_compression: Optional[float] = None
     platform_score: Optional[float] = None
     run_count: int = 0
 
@@ -84,6 +85,7 @@ class SweMinerTaskRunItem(BaseModel):
     input_tokens_with_compression: Optional[int] = None
     cached_input_tokens_with_compression: Optional[int] = None
     output_tokens_with_compression: Optional[int] = None
+    jev_input_tokens_with_compression: Optional[int] = None
     weighted_tokens_with_compression: Optional[float] = None
     platform_score: Optional[float] = None
     time_taken_seconds: Optional[float] = None
@@ -108,6 +110,7 @@ class SweMinerTaskAggregateItem(BaseModel):
     miner_input_tokens: Optional[int] = None
     miner_cached_input_tokens: Optional[int] = None
     miner_output_tokens: Optional[int] = None
+    miner_jev_input_tokens: Optional[int] = None
 
 
 class SweCompetitionMinerAggregateItem(BaseModel):
@@ -128,6 +131,7 @@ class SweCompetitionMinerAggregateItem(BaseModel):
     miner_input_tokens_total: Optional[int] = None
     miner_cached_input_tokens_total: Optional[int] = None
     miner_output_tokens_total: Optional[int] = None
+    miner_jev_input_tokens_total: Optional[int] = None
 
 
 class SweCompetitionAggregateResponse(BaseModel):

@@ -122,6 +122,21 @@ class CompactBenchReportRequest(BaseModel):
         default=None,
         description="Output/completion tokens.",
     )
+    jev_calls: int | None = Field(
+        default=None,
+        description="Jev calls the proxy made for the run's compressor (compressor services).",
+    )
+    jev_input_tokens: int | None = Field(
+        default=None,
+        description=(
+            "Jev input tokens spent by the run's compressor. Not part of the agent's "
+            "input/cached/output tokens above; Jev bills input only."
+        ),
+    )
+    jev_cost_usd: float | None = Field(
+        default=None,
+        description="Jev cost reported by OpenRouter for those calls, in USD.",
+    )
     agent_steps: int | None = Field(
         default=None,
         description="Best-effort count of agent steps observed during execution.",
