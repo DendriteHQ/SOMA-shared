@@ -42,6 +42,13 @@ class SweBenchRun(Base):
     input_tokens: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     cached_input_tokens: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     output_tokens: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    # Compressor services the run's compressor called through the proxy (Jev, the
+    # TypeSafe decision model). Kept apart from the agent's LLM tokens above, which
+    # they are never part of: tokens_used stays the agent's total. Jev bills input
+    # only. NULL means the run reported no service usage (e.g. a baseline run).
+    jev_calls: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    jev_input_tokens: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    jev_cost_usd: Mapped[float | None] = mapped_column(Numeric(14, 8), nullable=True)
     time_taken_seconds: Mapped[float | None] = mapped_column(Numeric(10, 4), nullable=True)
     agent_steps: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
