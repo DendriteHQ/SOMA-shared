@@ -249,6 +249,9 @@ Table swe_bench_runs [headercolor: #e74c3c] {
   trajectory_uuid text [unique]
   compression_logs_uuid text [unique]
   tokens_used bigint
+  jev_calls int [note: 'compressor services: Jev calls made for this run']
+  jev_input_tokens bigint [note: 'Jev input tokens; not part of tokens_used']
+  jev_cost_usd decimal(14,8)
   time_taken_seconds decimal(10,4)
   agent_steps int
   created_at timestamptz [not null]
