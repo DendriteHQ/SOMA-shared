@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from sqlalchemy import BigInteger, DateTime, Text
+from sqlalchemy import BigInteger, DateTime, Index, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .base import Base
@@ -24,3 +24,12 @@ class Competition(Base):
         onupdate=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
+
+
+# Miners select a competition by name (e.g. /miner/run-logs), so names must be unique,
+# ignoring case and surrounding whitespace.
+Index(
+    "uq_competitions_competition_name_normalized",
+    func.lower(func.btrim(Competition.competition_name)),
+    unique=True,
+)

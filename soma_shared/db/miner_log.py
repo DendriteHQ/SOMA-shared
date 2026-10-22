@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Collection
 from datetime import datetime, timezone
+import json
 from typing import Any
 import uuid
 
@@ -18,6 +20,17 @@ from soma_shared.db.session import get_current_db_request_metrics_snapshot
 logger = logging.getLogger(__name__)
 
 
+def _omit_payload_fields(payload: dict, fields: Collection[str]) -> dict:
+    """Replace the given top-level fields with a size marker so their content is not stored."""
+    redacted = dict(payload)
+    for field in fields:
+        if field not in redacted:
+            continue
+        size = len(json.dumps(redacted[field], default=str).encode("utf-8"))
+        redacted[field] = f"<omitted: {size} bytes>"
+    return redacted
+
+
 async def log_miner_message(
     session: AsyncSession,
     *,
@@ -30,12 +43,21 @@ async def log_miner_message(
     request_id: str | None = None,
     payload: Any,
     status_code: int | None = None,
+    omit_payload_fields: Collection[str] | None = None,
 ) -> None:
+    """Persist a miner request/response in ``requests``.
+
+    ``omit_payload_fields`` names top-level payload fields whose content must not be
+    stored (e.g. bulky or miner-private data returned by an endpoint); they are kept
+    as an ``<omitted: N bytes>`` marker.
+    """
     payload_value: Any
     if isinstance(payload, (dict, list)):
         payload_value = payload
     else:
         payload_value = {"raw": str(payload)}
+    if omit_payload_fields and isinstance(payload_value, dict):
+        payload_value = _omit_payload_fields(payload_value, omit_payload_fields)
     created_at = datetime.now(timezone.utc)
     external_request_id = request_id or uuid.uuid4().hex
     method_value = (method or "").strip() or "UNKNOWN"
