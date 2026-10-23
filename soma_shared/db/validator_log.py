@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from typing import Any
 import uuid
 
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,6 +16,7 @@ from soma_shared.db.models.signed_request import SignedRequest
 from soma_shared.db.models.validator import Validator
 from soma_shared.db.request_metrics import apply_db_metrics_snapshot_to_request
 from soma_shared.db.session import get_current_db_request_metrics_snapshot
+from soma_shared.utils.log_redaction import loggable_payload
 
 logger = logging.getLogger(__name__)
 
@@ -35,13 +37,17 @@ async def log_validator_message(
     response_payload: Any = None,
 ) -> None:
     payload_value: Any
-    if isinstance(payload, (dict, list)):
+    if isinstance(payload, BaseModel):
+        payload_value = loggable_payload(payload)
+    elif isinstance(payload, (dict, list)):
         payload_value = payload
     else:
         payload_value = {"raw": str(payload)}
     response_payload_value: Any = None
     if response_payload is not None:
-        if isinstance(response_payload, (dict, list)):
+        if isinstance(response_payload, BaseModel):
+            response_payload_value = loggable_payload(response_payload)
+        elif isinstance(response_payload, (dict, list)):
             response_payload_value = response_payload
         else:
             response_payload_value = {"raw": str(response_payload)}

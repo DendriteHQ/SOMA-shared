@@ -1,10 +1,11 @@
 from datetime import datetime
-from typing import Generic, TypeVar, Literal, List
+from typing import ClassVar, Generic, TypeVar, Literal, List
 from pydantic import BaseModel, ConfigDict, Field
 
 T = TypeVar("T")
 
 class UploadSolutionRequest(BaseModel):
+    log_omit_fields: ClassVar[frozenset[str]] = frozenset({"solution"})
     miner_hotkey: str
     solution: str
 
@@ -14,6 +15,7 @@ class UploadSolutionResponse(BaseModel):
 
 
 class AddOpenRouterApiKeyRequest(BaseModel):
+    log_omit_fields: ClassVar[frozenset[str]] = frozenset({"api_key"})
     miner_hotkey: str
     api_key: str
 
@@ -24,6 +26,7 @@ class AddOpenRouterApiKeyResponse(BaseModel):
 
 
 class UpdateOpenRouterApiKeyRequest(BaseModel):
+    log_omit_fields: ClassVar[frozenset[str]] = frozenset({"api_key"})
     miner_hotkey: str
     api_key: str
 
@@ -70,6 +73,9 @@ class CompressorExecLogEntry(BaseModel):
 
 
 class GetRunLogsResponse(BaseModel):
+    # Up to the log cap of the miner's stdout/stderr.
+    log_omit_fields: ClassVar[frozenset[str]] = frozenset({"entries"})
+
     ok: bool
     error_msg: str | None = None
     run_id: int | None = None
