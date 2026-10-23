@@ -14,6 +14,7 @@ from soma_shared.db.exception_log import log_exception
 from soma_shared.db.validator_log import log_validator_message
 from soma_shared.db.miner_log import log_miner_message
 from soma_shared.db.models.admin import Admin
+from soma_shared.utils.log_redaction import loggable_raw_payload, loggable_validation_errors
 from soma_shared.utils.signer import verify_nonce, verify_payload_model
 
 T = TypeVar("T", bound=BaseModel)
@@ -114,8 +115,8 @@ def verify_request_dep(model: type[T], expected_key=None):
                 extra={
                     "request_id": request_id,
                     "endpoint": request.url.path,
-                    "errors": exc.errors(),
-                    "payload": env.payload,
+                    "errors": loggable_validation_errors(exc.errors()),
+                    "payload": loggable_raw_payload(env.payload, model),
                 },
             )
             raise HTTPException(
@@ -156,7 +157,7 @@ def verify_miner_request_dep(model: type[T], expected_key=None):
                 extra={
                     "request_id": request_id,
                     "endpoint": request.url.path,
-                    "errors": exc.errors(),
+                    "errors": loggable_validation_errors(exc.errors()),
                 },
             )
             raise HTTPException(
@@ -188,7 +189,7 @@ def verify_request_dep_no_db(model: type[T], expected_key=None):
                 extra={
                     "request_id": request_id,
                     "endpoint": request.url.path,
-                    "errors": exc.errors(),
+                    "errors": loggable_validation_errors(exc.errors()),
                 },
             )
             raise HTTPException(
@@ -521,7 +522,7 @@ async def verify_request(
             signer_ss58=env.sig.signer_ss58,
             is_validator=is_validator,
             request_id=request_id,
-            payload=env.payload.model_dump(mode="json"),
+            payload=env.payload,
         )
     try:
         nonce = env.sig.nonce
@@ -640,7 +641,7 @@ async def verify_request(
                     "signer_ss58": env.sig.signer_ss58,
                     "signature": env.sig.signature,
                     "nonce": env.sig.nonce,
-                    "payload": env.payload.model_dump(mode="json"),
+                    "payload": env.payload,
                 },
             )
             await log_validator_message(
@@ -687,7 +688,7 @@ async def verify_miner_request(
             nonce=env.sig.nonce,
             signer_ss58=env.sig.signer_ss58,
             request_id=request_id,
-            payload=env.payload.model_dump(mode="json"),
+            payload=env.payload,
         )
     try:
         nonce = env.sig.nonce
@@ -786,7 +787,7 @@ async def verify_miner_request(
                     "signer_ss58": env.sig.signer_ss58,
                     "signature": env.sig.signature,
                     "nonce": env.sig.nonce,
-                    "payload": env.payload.model_dump(mode="json"),
+                    "payload": env.payload,
                 },
             )
             await log_miner_message(
@@ -843,7 +844,7 @@ def verify_admin_request_dep(model: type[T]):
                 extra={
                     "request_id": request_id,
                     "endpoint": request.url.path,
-                    "errors": exc.errors(),
+                    "errors": loggable_validation_errors(exc.errors()),
                 },
             )
             raise HTTPException(
@@ -863,7 +864,7 @@ def verify_admin_request_dep(model: type[T]):
             signer_ss58=env.sig.signer_ss58,
             is_validator=False,
             request_id=request_id,
-            payload=payload_obj.model_dump(mode="json"),
+            payload=payload_obj,
         )
         
         # Verify nonce

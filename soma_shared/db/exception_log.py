@@ -4,12 +4,14 @@ import logging
 import traceback
 from typing import Any
 
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from soma_shared.db.models.exception_log import ExceptionLog
 from soma_shared.db.models.request import Request
+from soma_shared.utils.log_redaction import loggable_payload
 
 logger = logging.getLogger(__name__)
 
@@ -22,9 +24,17 @@ async def log_exception(
     exc: Exception,
     context: dict[str, Any] | None = None,
 ) -> None:
+    """Persist an exception in ``exception_logs``.
+
+    Contract models in ``context`` are stored without the fields they mark in
+    ``log_omit_fields``, as in ``log_miner_message``.
+    """
     merged_context: dict[str, Any] | None = None
     if context:
-        merged_context = dict(context)
+        merged_context = {
+            key: loggable_payload(value) if isinstance(value, BaseModel) else value
+            for key, value in context.items()
+        }
     if endpoint:
         if merged_context is None:
             merged_context = {}
