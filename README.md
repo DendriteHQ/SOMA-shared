@@ -53,6 +53,11 @@ cd /path/to/SOMA-shared
 alembic -c alembic.ini upgrade head
 ```
 
+History before revision `c5a7e9b1d3f2` was squashed into a no-op baseline (the old
+files are in git history, commit `cb2d697`); downgrading below it is not possible.
+A fresh database gets its schema from `init_db()` (`Base.metadata.create_all`), then
+`alembic upgrade head`.
+
 Environment:
 - `POSTGRES_DSN` (preferred), or
 - `RDS_SECRET_ID` + optional `RDS_WRITER_HOST` / `RDS_READER_HOST` / `RDS_PORT` / `RDS_DB_NAME` / `RDS_USE_READER`

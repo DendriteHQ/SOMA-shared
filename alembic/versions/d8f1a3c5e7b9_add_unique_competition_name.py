@@ -31,6 +31,8 @@ def upgrade() -> None:
         "competitions",
         [sa.text("lower(btrim(competition_name))")],
         unique=True,
+        # create_all already builds this index on a fresh database.
+        if_not_exists=True,
     )
 
 
