@@ -165,61 +165,7 @@ Table competition_timeframes [headercolor: #e74c3c] {
 
 /* ---------- Screeners ---------- */
 
-Table screeners [headercolor: #e74c3c] {
-  id bigint [pk, increment]
-  competition_fk bigint [not null, unique]
-  screener_name text [not null]
-  description text
-  is_active boolean [not null, default: true]
-  created_at timestamptz [not null]
-  updated_at timestamptz [not null]
-}
-
-Table screening_challenges [headercolor: #e74c3c] {
-  id bigint [pk, increment]
-  screener_fk bigint [not null]
-  challenge_fk bigint [not null]
-
-  Indexes {
-    (screener_fk, challenge_fk)
-    (challenge_fk, screener_fk)
-  }
-}
-
 /* ---------- Challenges / Q&A ---------- */
-
-Table challenges [headercolor: #e74c3c] {
-  id bigint [pk, increment]
-  challenge_text text [not null]
-  challenge_name text [not null]
-  generation_timestamp text [not null]
-}
-
-Table competition_challenges [headercolor: #e74c3c] {
-  id bigint [pk, increment]
-  competition_fk bigint [not null]
-  challenge_fk bigint [not null]
-  is_active boolean [not null]
-
-  Indexes {
-    (competition_fk, challenge_fk)
-    (challenge_fk, competition_fk)
-  }
-
-  Note: 'In Postgres these are partial indexes where is_active = true.'
-}
-
-Table questions [headercolor: #e74c3c] {
-  id bigint [pk, increment]
-  challenge_fk bigint [not null]
-  question text [not null]
-}
-
-Table answers [headercolor: #e74c3c] {
-  id bigint [pk, increment]
-  question_fk bigint [not null]
-  answer text [not null]
-}
 
 /* ---------- SWE-bench ---------- */
 
@@ -278,103 +224,7 @@ Table swe_bench_verified_validations [headercolor: #e74c3c] {
   details json
 }
 
-Table swe_explorer_edit_validations [headercolor: #e74c3c] {
-  validation_fk bigint [pk]
-  resolved boolean [not null]
-  details json
-}
-
-Table swe_explorer_validations [headercolor: #e74c3c] {
-  validation_fk bigint [pk]
-
-  precision decimal(10,6)
-  recall decimal(10,6)
-  f1_score decimal(10,6)
-  hit_file_rate decimal(10,6)
-  noise_file_rate decimal(10,6)
-  weighted_core_coverage decimal(10,6)
-
-  Note: 'Check: score >= 0 AND score <= 1.'
-}
-
 /* ---------- Batches / scoring ---------- */
-
-Table challenge_batches [headercolor: #e74c3c] {
-  id bigint [pk, increment]
-  miner_fk bigint [not null]
-  script_fk bigint [not null]
-  created_at timestamptz [not null]
-
-  Indexes {
-    (script_fk)
-  }
-}
-
-Table batch_challenges [headercolor: #e74c3c] {
-  id bigint [pk, increment]
-  challenge_batch_fk bigint [not null]
-  challenge_fk bigint [not null]
-  compression_ratio decimal(10,4) [not null]
-
-  Indexes {
-    (challenge_batch_fk, challenge_fk, compression_ratio) [unique]
-    (challenge_fk, challenge_batch_fk)
-  }
-}
-
-Table batch_assignments [headercolor: #e74c3c] {
-  id bigint [pk, increment]
-  challenge_batch_fk bigint [not null, unique]
-  validator_fk bigint [not null]
-  assigned_at timestamptz [not null]
-  done_at timestamptz
-}
-
-Table batch_question_answers [headercolor: #e74c3c] {
-  id bigint [pk, increment]
-  batch_challenge_fk bigint [not null]
-  question_fk bigint [not null]
-  produced_answer text [not null]
-  uploaded_at timestamptz [not null]
-
-  Indexes {
-    (batch_challenge_fk, question_fk) [unique]
-  }
-}
-
-Table batch_question_scores [headercolor: #e74c3c] {
-  id bigint [pk, increment]
-  batch_challenge_fk bigint [not null]
-  question_fk bigint [not null]
-  validator_fk bigint [not null]
-  score decimal(10,4) [not null]
-  uploaded_at timestamptz [not null]
-  details json
-
-  Indexes {
-    (batch_challenge_fk, question_fk, validator_fk) [unique]
-  }
-}
-
-Table batch_challenge_scores [headercolor: #e74c3c] {
-  id bigint [pk, increment]
-  batch_challenge_fk bigint [not null]
-  validator_fk bigint
-  score decimal(10,4) [not null]
-  created_at timestamptz [not null]
-
-  Indexes {
-    (batch_challenge_fk, validator_fk) [unique]
-  }
-}
-
-Table batch_compressed_texts [headercolor: #e74c3c] {
-  id bigint [pk, increment]
-  batch_challenge_fk bigint [not null, unique]
-  storage_uuid text [not null, unique]
-  execution_time_seconds decimal(10,4)
-  created_at timestamptz [not null]
-}
 
 /* ---------- Winners ---------- */
 
@@ -451,8 +301,6 @@ Ref: signed_requests.signer_validator_fk > validators.id
 Ref: signed_requests.signer_miner_fk > miners.id
 
 Ref: swe_bench_verified_validations.validation_fk > swe_bench_run_validations.id [delete: cascade]
-Ref: swe_explorer_edit_validations.validation_fk > swe_bench_run_validations.id [delete: cascade]
-Ref: swe_explorer_validations.validation_fk > swe_bench_run_validations.id [delete: cascade]
 
 Ref: validator_registrations.validator_fk > validators.id
 Ref: validator_registrations.request_fk > requests.id [delete: set null]
@@ -471,16 +319,6 @@ Ref: competition_configs.competition_fk > competitions.id [delete: cascade]
 Ref: compression_competition_config.competition_config_fk > competition_configs.id [delete: cascade]
 Ref: competition_timeframes.competition_config_fk > competition_configs.id [delete: cascade]
 
-Ref: screeners.competition_fk > competitions.id [delete: cascade]
-Ref: screening_challenges.screener_fk > screeners.id [delete: cascade]
-Ref: screening_challenges.challenge_fk > challenges.id [delete: cascade]
-
-Ref: competition_challenges.competition_fk > competitions.id [delete: cascade]
-Ref: competition_challenges.challenge_fk > challenges.id [delete: cascade]
-
-Ref: questions.challenge_fk > challenges.id [delete: cascade]
-Ref: answers.question_fk > questions.id [delete: cascade]
-
 Ref: swe_bench_tasks.competition_fk > competitions.id [delete: cascade]
 
 Ref: swe_bench_runs.task_fk > swe_bench_tasks.id [delete: cascade]
@@ -491,27 +329,6 @@ Ref: swe_bench_runs.script_fk > scripts.id
 Ref: swe_bench_run_validations.run_fk > swe_bench_runs.id [delete: cascade]
 Ref: swe_bench_run_validations.request_fk > requests.id [delete: set null]
 Ref: swe_bench_run_validations.validator_fk > validators.id
-
-Ref: challenge_batches.miner_fk > miners.id
-Ref: challenge_batches.script_fk > scripts.id
-
-Ref: batch_challenges.challenge_batch_fk > challenge_batches.id [delete: cascade]
-Ref: batch_challenges.challenge_fk > challenges.id [delete: restrict]
-
-Ref: batch_assignments.challenge_batch_fk > challenge_batches.id [delete: cascade]
-Ref: batch_assignments.validator_fk > validators.id
-
-Ref: batch_question_answers.batch_challenge_fk > batch_challenges.id [delete: cascade]
-Ref: batch_question_answers.question_fk > questions.id [delete: cascade]
-
-Ref: batch_question_scores.batch_challenge_fk > batch_challenges.id [delete: cascade]
-Ref: batch_question_scores.question_fk > questions.id [delete: cascade]
-Ref: batch_question_scores.validator_fk > validators.id
-
-Ref: batch_challenge_scores.batch_challenge_fk > batch_challenges.id [delete: cascade]
-Ref: batch_challenge_scores.validator_fk > validators.id
-
-Ref: batch_compressed_texts.batch_challenge_fk > batch_challenges.id [delete: cascade]
 
 Ref: top_miners.competition_fk > competitions.id [delete: set null]
 Ref: top_miners.miner_fk > miners.id [delete: set null]
