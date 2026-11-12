@@ -38,7 +38,7 @@ dev = [
     "mypy>=1.0.0",
 ]
 migrations = [
-    "alembic>=1.13.0",
+    "alembic>=1.13.3",  # create_table(if_not_exists=...)
     "psycopg2-binary>=2.9.0",
 ]
 

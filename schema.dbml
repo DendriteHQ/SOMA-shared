@@ -206,6 +206,41 @@ Table swe_bench_runs [headercolor: #e74c3c] {
   benchmark_type varchar(64) [not null, default: 'swebench_verified']
 }
 
+Table sandbox_dispatches [headercolor: #e74c3c, note: 'Journal of run deliveries to sandboxes; no FKs so rows outlive deleted runs'] {
+  dispatch_id text [pk, note: 'assigned by run-coordinator per attempt, echoed by the sandbox']
+  run_id bigint [not null, note: 'swe_bench_runs.id at dispatch time; no FK']
+  sandbox_url text [note: 'NULL when the row was created from a result callback']
+  sandbox_id text [note: 'identity reported by the sandbox host (SANDBOX_INSTANCE_ID)']
+  attempt_index int [not null, default: 1]
+  competition_fk bigint
+  instance_id varchar(255) [note: 'swe_bench_tasks.instance_id of the run; no FK']
+  miner_fk bigint
+  benchmark_type varchar(64)
+  baseline_run boolean
+  dispatched_at timestamptz [not null, default: `now()`]
+  dispatch_outcome varchar(32) [not null, note: 'accepted|rejected|error|ack_timeout']
+  dispatch_http_status int
+  dispatch_error text
+  reported_at timestamptz
+  report_ok boolean
+  error text
+  error_class varchar(64)
+  execution_time_seconds decimal(10,4)
+  agent_steps int
+  tokens_used bigint
+  report_applied boolean [note: 'false when the run was already final or deleted']
+  closed_at timestamptz
+  closed_reason varchar(32) [note: 'reported|ttl_expired; NULL while open']
+
+  indexes {
+    (sandbox_id, dispatched_at)
+    (sandbox_url, dispatched_at)
+    run_id
+    (competition_fk, instance_id)
+    dispatched_at
+  }
+}
+
 Table swe_bench_run_validations [headercolor: #e74c3c] {
   id bigint [pk, increment]
   run_fk bigint [not null]
