@@ -89,11 +89,31 @@ class CompactBenchRunTaskRequest(BaseModel):
         default_factory=dict,
         description="Opaque task metadata echoed back in the response for caller correlation.",
     )
+    dispatch_id: str | None = Field(
+        default=None,
+        description=(
+            "Identifier the platform assigns to this delivery attempt of the run. The sandbox "
+            "reports it back in the acknowledgement and in the result callback, so the platform "
+            "can tell which attempt (and which sandbox) a result belongs to. When omitted, the "
+            "sandbox generates its own."
+        ),
+    )
 
 
 class CompactBenchRunTaskResponse(BaseModel):
     """Per-task execution result for the compact-bench backend."""
     success: bool = Field(..., description="Whether request was accepted successfully for execution.")
+    sandbox_id: str | None = Field(
+        default=None,
+        description="Stable identity of the sandbox host that answered, when it has one configured.",
+    )
+    dispatch_id: str | None = Field(
+        default=None,
+        description=(
+            "Dispatch the sandbox is executing for this run. Normally the one in the request; "
+            "for a run that was already active on this sandbox, the earlier dispatch it keeps running."
+        ),
+    )
 
 
 class CompactBenchReportRequest(BaseModel):
@@ -168,6 +188,17 @@ class CompactBenchReportRequest(BaseModel):
     metadata: dict[str, Any] = Field(
         default_factory=dict,
         description="Opaque execution metadata for debugging and downstream processing.",
+    )
+    dispatch_id: str | None = Field(
+        default=None,
+        description=(
+            "Dispatch this result belongs to (see CompactBenchRunTaskRequest.dispatch_id). "
+            "None from sandboxes that predate it, or when the sandbox lost the run's dispatch id."
+        ),
+    )
+    sandbox_id: str | None = Field(
+        default=None,
+        description="Stable identity of the sandbox host that executed the run, when configured.",
     )
 
 class CompactBenchReportResponse(BaseModel):

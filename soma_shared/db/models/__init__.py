@@ -22,6 +22,7 @@ from .swe_bench_task import SweBenchTask
 from .swe_bench_run import SweBenchRun
 from .swe_bench_run_validation import SweBenchRunValidation
 from .swe_bench_verified_validation import SweBenchVerifiedValidation
+from .sandbox_dispatch import SandboxDispatch
 __all__ = [
     "Base",
     "Admin",
@@ -47,4 +48,5 @@ __all__ = [
     "SweBenchRun",
     "SweBenchRunValidation",
     "SweBenchVerifiedValidation",
+    "SandboxDispatch",
 ]
