@@ -80,11 +80,10 @@ class CompactBenchRunTaskRequest(BaseModel):
             "uploads it without requiring direct S3 credentials. When omitted, upload is skipped."
         ),
     )
-    agent_name: str = Field(default="openclaw", description="Compact-bench runtime backend name.")
+    agent_name: str = Field(default="copilot", description="Compact-bench runtime backend name.")
     benchmark_type: str = Field(default="swebench_verified", description="Benchmark type: swebench_verified, swe_explorer_explore, or swe_explorer_edit.")
     model: str | None = Field(default=None, description="Optional LLM model override.")
-    openclaw_timeout: int | None = Field(default=1800, description="Optional timeout override for OpenClaw execution in seconds.")
-    openclaw_disable_somarizer: bool = Field(default=False)
+    agent_timeout: int | None = Field(default=1800, description="Optional agent execution timeout override in seconds.")
     metadata: dict[str, Any] = Field(
         default_factory=dict,
         description="Opaque task metadata echoed back in the response for caller correlation.",
